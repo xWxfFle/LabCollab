@@ -1,0 +1,69 @@
+{
+  "name": "@labcollab/source",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "nx serve web",
+    "dev:api": "nx serve api",
+    "build": "nx run-many -t build",
+    "lint": "nx run-many -t lint",
+    "graph": "nx graph",
+    "db:generate": "cd apps/api && bunx drizzle-kit generate",
+    "db:migrate": "cd apps/api && bunx drizzle-kit migrate",
+    "db:seed": "bun run apps/api/src/seed.ts"
+  },
+  "devDependencies": {
+    "@nx/js": "^22.7.5",
+    "@nx/react": "^22.7.5",
+    "@nx/vite": "^22.7.5",
+    "@types/bun": "latest",
+    "@types/pdfmake": "^0.3.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
+    "drizzle-kit": "^0.31.10",
+    "nx": "^22.7.5",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16"
+  },
+  "dependencies": {
+    "@argon-router/core": "^0.12.0",
+    "@argon-router/react": "^0.12.0",
+    "@effector-reform/core": "^0.17.0",
+    "@effector-reform/react": "^0.17.0",
+    "@effector-reform/zod": "^0.17.0",
+    "@elysiajs/bearer": "^1.4.4",
+    "@elysiajs/cookie": "^0.8.0",
+    "@elysiajs/cors": "^1.4.2",
+    "@elysiajs/jwt": "^1.4.2",
+    "@farfetched/core": "^0.15.0",
+    "@farfetched/zod": "^0.15.0",
+    "@mantine/core": "^9.3.1",
+    "@mantine/hooks": "^9.3.1",
+    "@mantine/notifications": "^9.3.1",
+    "@mantine/tiptap": "^9.3.1",
+    "@tiptap/core": "^3.26.1",
+    "@tiptap/extension-link": "^3.26.1",
+    "@tiptap/pm": "^3.26.1",
+    "@tiptap/react": "^3.26.1",
+    "@tiptap/starter-kit": "^3.26.1",
+    "drizzle-orm": "^0.45.2",
+    "effector": "^23.4.4",
+    "effector-react": "^23.3.0",
+    "elysia": "^1.4.28",
+    "history": "^5.3.0",
+    "patronum": "^2.3.0",
+    "pdfmake": "^0.3.11",
+    "postgres": "^3.4.9",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "zod": "^4.4.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

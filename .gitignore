@@ -1,0 +1,44 @@
+# dependencies
+node_modules/
+
+# build
+dist/
+tmp/
+out-tsc/
+vite.config.*.timestamp*
+
+# nx
+.nx/installation
+.nx/cache
+.nx/workspace-data
+.nx/self-healing
+
+# env
+.env
+.env.local
+.env.*.local
+
+# logs
+*.log
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.cursor/
+docs/
+.agents/
+.vscode/*
+!.vscode/extensions.json
+
+# test / e2e
+coverage/
+playwright-report/
+test-results/
+
+# drizzle
+apps/api/drizzle/meta/
+
+# docker volumes (local)
+data/
+
