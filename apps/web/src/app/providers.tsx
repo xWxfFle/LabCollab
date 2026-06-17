@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
-import { createTheme, MantineProvider } from '@mantine/core'
+import { createTheme, localStorageColorSchemeManager, MantineProvider } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
+import { colorSchemeStorageKey } from '@/shared/lib/color-scheme'
 import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
 import '@mantine/tiptap/styles.css'
@@ -14,9 +15,17 @@ const theme = createTheme({
   headings: { fontFamily: 'Lato, sans-serif', fontWeight: '700' },
 })
 
+const colorSchemeManager = localStorageColorSchemeManager({
+  key: colorSchemeStorageKey,
+})
+
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <MantineProvider theme={theme} defaultColorScheme="light">
+    <MantineProvider
+      theme={theme}
+      defaultColorScheme="light"
+      colorSchemeManager={colorSchemeManager}
+    >
       <Notifications position="top-right" />
       {children}
     </MantineProvider>

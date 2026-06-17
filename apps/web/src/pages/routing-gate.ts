@@ -6,6 +6,9 @@ import { router } from '@/shared/routing'
 
 function collectRoutePendingStores(routeViews: RouteView[]): Store<boolean>[] {
   return routeViews.flatMap((view) => {
+    if (!view?.route)
+      return []
+
     const ownStores = is.route(view.route) ? [view.route.$isPending] : []
     const childStores = view.children ? collectRoutePendingStores(view.children) : []
 

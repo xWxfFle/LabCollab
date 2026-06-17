@@ -5,7 +5,12 @@ const pages = import.meta.glob<true, string, { default: RouteView }>('./**/index
   eager: true,
 })
 
-const routeViews = Object.values(pages).map(page => page.default)
+function isRouteView(module: { default: unknown }): module is { default: RouteView } {
+  const view = module.default
+  return view != null && typeof view === 'object' && 'route' in view
+}
+
+const routeViews = Object.values(pages).filter(isRouteView).map(page => page.default)
 
 const RoutesView = createAppRoutesView(routeViews)
 

@@ -1,6 +1,16 @@
 import type { UserDto } from '@labcollab/shared'
-import { Avatar, Group, Menu, Text, UnstyledButton } from '@mantine/core'
-import { IconLogout } from '@tabler/icons-react'
+import {
+  Avatar,
+  Box,
+  Group,
+  Menu,
+  Switch,
+  Text,
+  UnstyledButton,
+  useComputedColorScheme,
+  useMantineColorScheme,
+} from '@mantine/core'
+import { IconLogout, IconMoon } from '@tabler/icons-react'
 import { useUnit } from 'effector-react'
 import { $viewer, signedOut } from '@/shared/viewer'
 
@@ -20,6 +30,29 @@ function userLabel(user: UserDto) {
   return user.displayName.trim() || user.email
 }
 
+function ThemeSwitchMenuItem() {
+  const { setColorScheme } = useMantineColorScheme()
+  const computedColorScheme = useComputedColorScheme('light')
+  const isDark = computedColorScheme === 'dark'
+
+  return (
+    <Menu.Item closeMenuOnClick={false} component="div">
+      <Group justify="space-between" wrap="nowrap" gap="sm">
+        <Group gap="xs" wrap="nowrap">
+          <IconMoon size={16} stroke={1.5} />
+          <Text size="sm">Тёмная тема</Text>
+        </Group>
+        <Switch
+          size="sm"
+          checked={isDark}
+          onChange={event => setColorScheme(event.currentTarget.checked ? 'dark' : 'light')}
+          aria-label="Тёмная тема"
+        />
+      </Group>
+    </Menu.Item>
+  )
+}
+
 export function UserMenu() {
   const [viewer, logout] = useUnit([$viewer, signedOut])
 
@@ -31,14 +64,14 @@ export function UserMenu() {
     <Menu position="bottom-end" withinPortal width={260}>
       <Menu.Target>
         <UnstyledButton
-          px="xs"
+          px={{ base: 0, sm: 'xs' }}
           py={4}
           styles={{
             root: {
               'borderRadius': 'var(--mantine-radius-default)',
               'transition': 'background-color 150ms ease',
               '&:hover': {
-                backgroundColor: 'var(--mantine-color-gray-0)',
+                backgroundColor: 'var(--mantine-color-default-hover)',
               },
             },
           }}
@@ -47,14 +80,14 @@ export function UserMenu() {
             <Avatar radius="md" color="violet" variant="light" size="md">
               {userInitials(viewer)}
             </Avatar>
-            <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+            <Box visibleFrom="sm" style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
               <Text size="sm" fw={600} lineClamp={1}>
                 {userLabel(viewer)}
               </Text>
               <Text size="xs" c="dimmed" lineClamp={1}>
                 {viewer.email}
               </Text>
-            </div>
+            </Box>
           </Group>
         </UnstyledButton>
       </Menu.Target>
@@ -68,6 +101,8 @@ export function UserMenu() {
             {viewer.email}
           </Text>
         </Menu.Label>
+        <Menu.Divider />
+        <ThemeSwitchMenuItem />
         <Menu.Divider />
         <Menu.Item
           color="red"

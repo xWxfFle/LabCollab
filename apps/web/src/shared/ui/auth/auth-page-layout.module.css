@@ -1,0 +1,31 @@
+.formPanel {
+  min-height: 100%;
+  --stack-justify: flex-start;
+}
+
+.formContent {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-height: 0;
+}
+
+.introPanel {
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+@media (min-width: 48em) {
+  .formPanel {
+    --stack-justify: flex-start;
+  }
+
+  .formContent {
+    justify-content: center;
+  }
+
+  .introPanel {
+    border-top: none;
+    border-left: 1px solid var(--mantine-color-default-border);
+  }
+}

@@ -24,7 +24,7 @@ const features: FeatureItem[] = [
   {
     icon: IconFileText,
     title: 'Записи экспериментов',
-    description: 'Фиксированный шаблон и rich-text поле наблюдений с автосохранением.',
+    description: 'Настраиваемые шаблоны, чеклист и rich-text наблюдения с ручным сохранением.',
   },
   {
     icon: IconHistory,
