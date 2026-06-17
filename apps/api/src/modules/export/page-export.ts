@@ -1,20 +1,12 @@
-import { eq } from 'drizzle-orm';
-import pdfmake from 'pdfmake';
-import type { TDocumentDefinitions, Content } from 'pdfmake/interfaces';
-import { db } from '../../db';
-import { projectPages, projectNodes, projects } from '../../db/schema';
-import { htmlToMarkdown, stripHtml } from '../../lib/html-text';
-import { toProjectPageDto } from '../../lib/page-mappers';
-import { canReadProject } from '../../lib/rbac';
-
-pdfmake.setFonts({
-  Roboto: {
-    normal: 'Helvetica',
-    bold: 'Helvetica-Bold',
-    italics: 'Helvetica-Oblique',
-    bolditalics: 'Helvetica-BoldOblique',
-  },
-});
+import type { Buffer } from 'node:buffer'
+import type { Content, TDocumentDefinitions } from 'pdfmake/interfaces'
+import { eq } from 'drizzle-orm'
+import { db } from '../../db'
+import { projectNodes, projectPages, projects } from '../../db/schema'
+import { htmlToMarkdown, stripHtml } from '../../lib/html-text'
+import { toProjectPageDto } from '../../lib/page-mappers'
+import { canReadProject } from '../../lib/rbac'
+import { pdfmake } from './pdf-fonts'
 
 async function loadPageForExport(pageId: string, userId: string) {
   const [row] = await db
@@ -22,29 +14,32 @@ async function loadPageForExport(pageId: string, userId: string) {
     .from(projectPages)
     .innerJoin(projectNodes, eq(projectNodes.id, projectPages.nodeId))
     .where(eq(projectPages.id, pageId))
-    .limit(1);
+    .limit(1)
 
-  if (!row) return null;
-  if (!(await canReadProject(userId, row.page.projectId))) return null;
+  if (!row)
+    return null
+  if (!(await canReadProject(userId, row.page.projectId)))
+    return null
 
   const [project] = await db
     .select()
     .from(projects)
     .where(eq(projects.id, row.page.projectId))
-    .limit(1);
+    .limit(1)
 
   return {
     dto: toProjectPageDto(row.page, row.node),
     projectName: project?.name ?? '',
-  };
+  }
 }
 
 export async function buildPagePdf(pageId: string, userId: string): Promise<Buffer> {
-  const data = await loadPageForExport(pageId, userId);
-  if (!data) throw new Error('Not found');
+  const data = await loadPageForExport(pageId, userId)
+  if (!data)
+    throw new Error('Not found')
 
-  const { dto, projectName } = data;
-  const bodyText = stripHtml(dto.bodyHtml);
+  const { dto, projectName } = data
+  const bodyText = stripHtml(dto.bodyHtml)
 
   const content: Content[] = [
     { text: 'LabCollab — страница документации', style: 'header' },
@@ -52,7 +47,7 @@ export async function buildPagePdf(pageId: string, userId: string): Promise<Buff
     { text: `Дата экспорта: ${new Date().toLocaleString('ru-RU')}`, margin: [0, 0, 0, 16] },
     { text: dto.title, style: 'subheader' },
     { text: bodyText, margin: [0, 8, 0, 0] },
-  ];
+  ]
 
   const docDefinition: TDocumentDefinitions = {
     content,
@@ -61,17 +56,18 @@ export async function buildPagePdf(pageId: string, userId: string): Promise<Buff
       subheader: { fontSize: 14, bold: true, margin: [0, 12, 0, 4] },
     },
     defaultStyle: { font: 'Roboto', fontSize: 11 },
-  };
+  }
 
-  return pdfmake.createPdf(docDefinition).getBuffer();
+  return pdfmake.createPdf(docDefinition).getBuffer()
 }
 
 export async function buildPageMarkdown(pageId: string, userId: string): Promise<string> {
-  const data = await loadPageForExport(pageId, userId);
-  if (!data) throw new Error('Not found');
+  const data = await loadPageForExport(pageId, userId)
+  if (!data)
+    throw new Error('Not found')
 
-  const { dto, projectName } = data;
-  const body = htmlToMarkdown(dto.bodyHtml);
+  const { dto, projectName } = data
+  const body = htmlToMarkdown(dto.bodyHtml)
 
   return [
     `# ${dto.title}`,
@@ -81,5 +77,5 @@ export async function buildPageMarkdown(pageId: string, userId: string): Promise
     '',
     body,
     '',
-  ].join('\n');
+  ].join('\n')
 }
