@@ -1,9 +1,9 @@
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   root: __dirname,
@@ -22,7 +22,7 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/api/, ''),
+        rewrite: p => p.replace(/^\/api/, ''),
       },
     },
   },
@@ -30,4 +30,4 @@ export default defineConfig({
     outDir: '../../dist/apps/web',
     emptyOutDir: true,
   },
-});
+})

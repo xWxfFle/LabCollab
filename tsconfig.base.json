@@ -1,29 +1,29 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "rootDir": ".",
-    "sourceMap": true,
-    "declaration": false,
-    "moduleResolution": "bundler",
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "emitDecoratorMetadata": false,
     "experimentalDecorators": false,
-    "importHelpers": false,
-    "target": "ES2022",
-    "module": "ESNext",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "skipLibCheck": true,
-    "skipDefaultLibCheck": true,
     "baseUrl": ".",
+    "rootDir": ".",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "paths": {
       "@labcollab/shared": ["packages/shared/src/index.ts"],
       "@labcollab/shared/*": ["packages/shared/src/*"]
     },
+    "resolveJsonModule": true,
     "strict": true,
+    "declaration": false,
+    "importHelpers": false,
+    "noEmit": true,
+    "sourceMap": true,
     "ignoreDeprecations": "6.0",
     "esModuleInterop": true,
-    "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true
+    "skipDefaultLibCheck": true,
+    "skipLibCheck": true
   },
   "exclude": ["node_modules", "tmp", "dist"]
 }
