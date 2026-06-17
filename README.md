@@ -97,10 +97,6 @@ docker compose up --build
 - `packages/shared` - общие типы и Zod-схемы
 - Docker, Docker Compose
 
-## Лицензия
-
-MIT — см. [LICENSE](LICENSE). © 2026 Arseniy Filatov.
-
 ## Поддержка
 
 По вопросам и сотрудничеству: [@xWxfFle](https://t.me/xWxfFle) в Telegram.
