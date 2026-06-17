@@ -32,10 +32,9 @@
 ## Monorepo (Nx + Bun)
 
 ```
-apps/web      — React, Vite, Mantine, Effector, Farfetched, TipTap
-apps/api      — Elysia, Drizzle, PostgreSQL
+apps/web      - React, Vite, Mantine, Effector, Farfetched, TipTap
+apps/api      - Elysia, Drizzle, PostgreSQL
 packages/shared
-docs/         — документация (локально, в .gitignore)
 ```
 
 ## Быстрый старт (разработка)
