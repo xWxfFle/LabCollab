@@ -1,1 +1,2 @@
-export { PageLoader } from './page-loader';
+export { PageLoader } from './page-loader'
+export { WorkspaceAreaLoader } from './workspace-area-loader'

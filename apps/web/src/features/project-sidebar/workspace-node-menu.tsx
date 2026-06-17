@@ -1,13 +1,14 @@
-import type { ProjectNodeType } from '@labcollab/shared';
-import { ActionIcon, Menu } from '@mantine/core';
+import type { ProjectNodeType } from '@labcollab/shared'
+import { ActionIcon, Menu } from '@mantine/core'
+import { IconDotsVertical } from '@tabler/icons-react'
 
 interface WorkspaceNodeMenuProps {
-  nodeType: ProjectNodeType;
-  onCreateFolder: () => void;
-  onCreatePage: () => void;
-  onCreateExperiment: () => void;
-  onMove?: () => void;
-  onDelete: () => void;
+  nodeType: ProjectNodeType
+  onCreateFolder: () => void
+  onCreatePage: () => void
+  onCreateExperiment: () => void
+  onMove?: () => void
+  onDelete: () => void
 }
 
 export function WorkspaceNodeMenu({
@@ -23,11 +24,11 @@ export function WorkspaceNodeMenu({
       <Menu.Target>
         <ActionIcon
           variant="subtle"
-          size="xs"
+          size="sm"
           aria-label="Действия"
-          onClick={(e) => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
         >
-          ⋯
+          <IconDotsVertical size={14} stroke={1.5} />
         </ActionIcon>
       </Menu.Target>
       <Menu.Dropdown>
@@ -45,5 +46,5 @@ export function WorkspaceNodeMenu({
         </Menu.Item>
       </Menu.Dropdown>
     </Menu>
-  );
+  )
 }

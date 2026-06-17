@@ -1,14 +1,14 @@
-import { RichTextEditor } from '@mantine/tiptap';
-import { useEditor } from '@tiptap/react';
-import LinkExtension from '@tiptap/extension-link';
-import StarterKit from '@tiptap/starter-kit';
-import { Paper, Text } from '@mantine/core';
+import { Paper, Text } from '@mantine/core'
+import { RichTextEditor } from '@mantine/tiptap'
+import LinkExtension from '@tiptap/extension-link'
+import { useEditor } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
 
 interface ObservationsEditorProps {
-  editorKey: string;
-  content: string;
-  onChange: (html: string) => void;
-  readOnly?: boolean;
+  editorKey: string
+  content: string
+  onChange: (html: string) => void
+  readOnly?: boolean
 }
 
 export function ObservationsEditor({
@@ -26,11 +26,11 @@ export function ObservationsEditor({
       content: content || '<p></p>',
       editable: !readOnly,
       onUpdate: ({ editor: ed }) => {
-        onChange(ed.getHTML());
+        onChange(ed.getHTML())
       },
     },
     [editorKey, readOnly],
-  );
+  )
 
   return (
     <Paper withBorder p="sm" mt="sm">
@@ -62,5 +62,5 @@ export function ObservationsEditor({
         <RichTextEditor.Content mih={160} />
       </RichTextEditor>
     </Paper>
-  );
+  )
 }

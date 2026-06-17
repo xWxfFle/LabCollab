@@ -1,7 +1,20 @@
-import type { ProjectNodeType, WorkspaceNodeDto } from '@labcollab/shared';
-import { Badge, Box, Collapse, Group, NavLink, Text } from '@mantine/core';
-import { useUnit } from 'effector-react';
-import { useState } from 'react';
+import type { ExperimentStatus, ProjectNodeType, WorkspaceNodeDto } from '@labcollab/shared'
+import { Badge, Group, NavLink, Stack, Text, ThemeIcon } from '@mantine/core'
+import {
+  IconChevronRight,
+  IconFileText,
+  IconFlask,
+  IconFolder,
+} from '@tabler/icons-react'
+import { useUnit } from 'effector-react'
+import { useState } from 'react'
+import { confirmAction, experimentStatusMeta } from '@/shared/lib'
+import { routes } from '@/shared/routing'
+import {
+  filterWorkspaceTree,
+  readCollapsedFolders,
+  writeCollapsedFolders,
+} from './lib'
 import {
   $canEdit,
   $statusFilter,
@@ -10,195 +23,212 @@ import {
   newPageClicked,
   nodeDeleteClicked,
   nodeMoveClicked,
-} from '@/layouts/project-workspace/model';
-import { RouteLink, routes } from '@/shared/routing';
-import {
-  filterWorkspaceTree,
-  readCollapsedFolders,
-  writeCollapsedFolders,
-} from './lib';
-import { WorkspaceNodeMenu } from './workspace-node-menu';
+} from './model'
+import { WorkspaceNodeMenu } from './workspace-node-menu'
+import { treeIconProps, workspaceTreeNavLinkProps } from './workspace-tree-icons'
+import { WorkspaceTreeNavLink } from './workspace-tree-nav-link'
 
-const STATUS_LABELS: Record<string, string> = {
-  draft: 'Черновик',
-  in_progress: 'В процессе',
-  completed: 'Завершён',
-};
+const experimentStatusShort: Record<ExperimentStatus, string> = {
+  draft: 'Черн.',
+  in_progress: 'В раб.',
+  completed: 'Готово',
+}
 
 function confirmDelete(node: WorkspaceNodeDto): boolean {
   if (node.type === 'folder') {
-    return window.confirm(
+    return confirmAction(
       'Удалить папку? Папку можно удалить только если она пуста.',
-    );
+    )
   }
   if (node.type === 'page') {
-    return window.confirm('Удалить страницу? Это действие нельзя отменить.');
+    return confirmAction('Удалить страницу? Это действие нельзя отменить.')
   }
-  return window.confirm('Удалить эксперимент? Это действие нельзя отменить.');
+  return confirmAction('Удалить эксперимент? Это действие нельзя отменить.')
+}
+
+function nodeLeftSection(type: WorkspaceNodeDto['type']) {
+  const color = type === 'folder' ? 'yellow' : type === 'page' ? 'gray' : 'violet'
+
+  const Icon = type === 'folder'
+    ? IconFolder
+    : type === 'page'
+      ? IconFileText
+      : IconFlask
+
+  return (
+    <ThemeIcon variant="light" color={color} size={24} radius="sm">
+      <Icon {...treeIconProps} />
+    </ThemeIcon>
+  )
+}
+
+function FolderChevron({ opened }: { opened: boolean }) {
+  return (
+    <IconChevronRight
+      {...treeIconProps}
+      size={14}
+      style={{
+        transition: 'transform 150ms ease',
+        transform: opened ? 'rotate(90deg)' : undefined,
+        opacity: 0.55,
+      }}
+    />
+  )
 }
 
 interface TreeNodeProps {
-  node: WorkspaceNodeDto;
-  projectId: string;
-  depth: number;
-  activePageId: string | null;
-  activeExperimentId: string | null;
-  collapsed: Set<string>;
-  canEdit: boolean;
-  onToggle: (folderId: string) => void;
-  onNewFolder: (parentId: string | null) => void;
-  onNewPage: (parentId: string | null) => void;
-  onNewExperiment: (parentId: string | null) => void;
+  node: WorkspaceNodeDto
+  projectId: string
+  activePageId: string | null
+  activeExperimentId: string | null
+  collapsed: Set<string>
+  canEdit: boolean
+  onFolderOpen: (folderId: string, opened: boolean) => void
+  onNewFolder: (parentId: string | null) => void
+  onNewPage: (parentId: string | null) => void
+  onNewExperiment: (parentId: string | null) => void
   onDelete: (payload: {
-    nodeId: string;
-    type: ProjectNodeType;
-    experimentId?: string | null;
-    pageId?: string | null;
-  }) => void;
-  onMove: (payload: { nodeId: string; type: ProjectNodeType }) => void;
+    nodeId: string
+    type: ProjectNodeType
+    experimentId?: string | null
+    pageId?: string | null
+  }) => void
+  onMove: (payload: { nodeId: string, type: ProjectNodeType }) => void
 }
 
 function TreeNode({
   node,
   projectId,
-  depth,
   activePageId,
   activeExperimentId,
   collapsed,
   canEdit,
-  onToggle,
+  onFolderOpen,
   onNewFolder,
   onNewPage,
   onNewExperiment,
   onDelete,
   onMove,
 }: TreeNodeProps) {
-  const paddingLeft = depth * 12;
+  const folderParentId = node.type === 'folder' ? node.id : null
 
-  const menu = canEdit ? (
-    <WorkspaceNodeMenu
-      nodeType={node.type}
-      onCreateFolder={() => onNewFolder(node.type === 'folder' ? node.id : null)}
-      onCreatePage={() => onNewPage(node.type === 'folder' ? node.id : null)}
-      onCreateExperiment={() => onNewExperiment(node.type === 'folder' ? node.id : null)}
-      onMove={() => onMove({ nodeId: node.id, type: node.type })}
-      onDelete={() => {
-        if (!confirmDelete(node)) return;
-        onDelete({
-          nodeId: node.id,
-          type: node.type,
-          experimentId: node.experimentId,
-          pageId: node.pageId,
-        });
-      }}
-    />
-  ) : null;
+  const menu = canEdit
+    ? (
+        <WorkspaceNodeMenu
+          nodeType={node.type}
+          onCreateFolder={() => onNewFolder(folderParentId)}
+          onCreatePage={() => onNewPage(folderParentId)}
+          onCreateExperiment={() => onNewExperiment(folderParentId)}
+          onMove={() => onMove({ nodeId: node.id, type: node.type })}
+          onDelete={() => {
+            if (!confirmDelete(node))
+              return
+            onDelete({
+              nodeId: node.id,
+              type: node.type,
+              experimentId: node.experimentId,
+              pageId: node.pageId,
+            })
+          }}
+        />
+      )
+    : null
 
   if (node.type === 'folder') {
-    const opened = !collapsed.has(node.id);
+    const opened = !collapsed.has(node.id)
+
     return (
-      <Box>
-        <NavLink
-          label={node.title}
-          leftSection="📁"
-          pl={paddingLeft}
-          onClick={() => onToggle(node.id)}
-          rightSection={
-            <Group gap={4} wrap="nowrap">
-              {menu}
-              <Text size="xs" c="dimmed">
-                {opened ? '▾' : '▸'}
-              </Text>
-            </Group>
-          }
-        />
-        <Collapse expanded={opened}>
-          {node.children.map((child) => (
-            <TreeNode
-              key={child.id}
-              node={child}
-              projectId={projectId}
-              depth={depth + 1}
-              activePageId={activePageId}
-              activeExperimentId={activeExperimentId}
-              collapsed={collapsed}
-              canEdit={canEdit}
-              onToggle={onToggle}
-              onNewFolder={onNewFolder}
-              onNewPage={onNewPage}
-              onNewExperiment={onNewExperiment}
-              onDelete={onDelete}
-              onMove={onMove}
-            />
-          ))}
-        </Collapse>
-      </Box>
-    );
+      <NavLink
+        {...workspaceTreeNavLinkProps}
+        label={node.title}
+        leftSection={nodeLeftSection('folder')}
+        rightSection={(
+          <Group gap={2} wrap="nowrap">
+            {menu}
+            <FolderChevron opened={opened} />
+          </Group>
+        )}
+        opened={opened}
+        onChange={value => onFolderOpen(node.id, value)}
+        variant="subtle"
+        noWrap
+        childrenOffset="md"
+        disableRightSectionRotation
+      >
+        {node.children.map(child => (
+          <TreeNode
+            key={child.id}
+            node={child}
+            projectId={projectId}
+            activePageId={activePageId}
+            activeExperimentId={activeExperimentId}
+            collapsed={collapsed}
+            canEdit={canEdit}
+            onFolderOpen={onFolderOpen}
+            onNewFolder={onNewFolder}
+            onNewPage={onNewPage}
+            onNewExperiment={onNewExperiment}
+            onDelete={onDelete}
+            onMove={onMove}
+          />
+        ))}
+      </NavLink>
+    )
   }
 
   if (node.type === 'page' && node.pageId) {
-    const active = activePageId === node.pageId;
     return (
-      <Group gap={4} wrap="nowrap" pl={paddingLeft} align="center">
-        <Box style={{ flex: 1, minWidth: 0 }}>
-          <RouteLink
-            to={routes.projectPageView}
-            params={{ projectId, pageId: node.pageId }}
-          >
-            <NavLink
-              component="div"
-              label={node.title}
-              leftSection="📄"
-              active={active}
-            />
-          </RouteLink>
-        </Box>
-        {menu}
-      </Group>
-    );
+      <WorkspaceTreeNavLink
+        route={routes.projectPageView}
+        params={{ projectId, pageId: node.pageId }}
+        label={node.title}
+        leftSection={nodeLeftSection('page')}
+        rightSection={menu}
+        active={activePageId === node.pageId}
+      />
+    )
   }
 
   if (node.type === 'experiment' && node.experimentId) {
-    const active = activeExperimentId === node.experimentId;
+    const status = node.experimentStatus
+    const statusMeta = status ? experimentStatusMeta[status] : null
+
     return (
-      <Group gap={4} wrap="nowrap" pl={paddingLeft} align="center">
-        <Box style={{ flex: 1, minWidth: 0 }}>
-          <RouteLink
-            to={routes.experimentView}
-            params={{ projectId, experimentId: node.experimentId }}
-          >
-            <NavLink
-              component="div"
-              label={
-                <Group gap={6} wrap="nowrap">
-                  <Text size="sm" lineClamp={1}>
-                    {node.title}
-                  </Text>
-                  {node.experimentStatus && (
-                    <Badge size="xs" variant="light">
-                      {STATUS_LABELS[node.experimentStatus] ?? node.experimentStatus}
-                    </Badge>
-                  )}
-                </Group>
-              }
-              leftSection="🧪"
-              active={active}
-            />
-          </RouteLink>
-        </Box>
-        {menu}
-      </Group>
-    );
+      <WorkspaceTreeNavLink
+        route={routes.experimentView}
+        params={{ projectId, experimentId: node.experimentId }}
+        label={(
+          <Group gap={6} wrap="nowrap" style={{ minWidth: 0, flex: 1 }}>
+            <Text component="span" size="sm" truncate>
+              {node.title}
+            </Text>
+            {statusMeta && (
+              <Badge
+                size="xs"
+                variant="light"
+                color={statusMeta.color}
+                style={{ flexShrink: 0 }}
+              >
+                {experimentStatusShort[status!]}
+              </Badge>
+            )}
+          </Group>
+        )}
+        leftSection={nodeLeftSection('experiment')}
+        rightSection={menu}
+        active={activeExperimentId === node.experimentId}
+      />
+    )
   }
 
-  return null;
+  return null
 }
 
 interface ProjectSidebarTreeProps {
-  projectId: string;
-  tree: WorkspaceNodeDto[];
-  activePageId: string | null;
-  activeExperimentId: string | null;
+  projectId: string
+  tree: WorkspaceNodeDto[]
+  activePageId: string | null
+  activeExperimentId: string | null
 }
 
 export function ProjectSidebarTree({
@@ -207,7 +237,7 @@ export function ProjectSidebarTree({
   activePageId,
   activeExperimentId,
 }: ProjectSidebarTreeProps) {
-  const [statusFilter, canEdit] = useUnit([$statusFilter, $canEdit]);
+  const [statusFilter, canEdit] = useUnit([$statusFilter, $canEdit])
   const [
     onNewFolder,
     onNewPage,
@@ -220,43 +250,43 @@ export function ProjectSidebarTree({
     newExperimentClicked,
     nodeDeleteClicked,
     nodeMoveClicked,
-  ]);
+  ])
 
-  const [collapsed, setCollapsed] = useState(() => readCollapsedFolders(projectId));
+  const [collapsed, setCollapsed] = useState(() => readCollapsedFolders(projectId))
 
-  const onToggle = (folderId: string) => {
+  const onFolderOpen = (folderId: string, opened: boolean) => {
     setCollapsed((prev) => {
-      const next = new Set(prev);
-      if (next.has(folderId)) next.delete(folderId);
-      else next.add(folderId);
-      writeCollapsedFolders(projectId, next);
-      return next;
-    });
-  };
+      const next = new Set(prev)
+      if (opened)
+        next.delete(folderId)
+      else next.add(folderId)
+      writeCollapsedFolders(projectId, next)
+      return next
+    })
+  }
 
-  const filtered = filterWorkspaceTree(tree, statusFilter);
+  const filtered = filterWorkspaceTree(tree, statusFilter)
 
   if (filtered.length === 0) {
     return (
-      <Text size="sm" c="dimmed" px="sm">
+      <Text size="sm" c="dimmed" px="sm" py="xs">
         Нет элементов
       </Text>
-    );
+    )
   }
 
   return (
-    <Box>
-      {filtered.map((node) => (
+    <Stack gap={2} px={4}>
+      {filtered.map(node => (
         <TreeNode
           key={node.id}
           node={node}
           projectId={projectId}
-          depth={0}
           activePageId={activePageId}
           activeExperimentId={activeExperimentId}
           collapsed={collapsed}
           canEdit={canEdit}
-          onToggle={onToggle}
+          onFolderOpen={onFolderOpen}
           onNewFolder={onNewFolder}
           onNewPage={onNewPage}
           onNewExperiment={onNewExperiment}
@@ -264,6 +294,6 @@ export function ProjectSidebarTree({
           onMove={onMove}
         />
       ))}
-    </Box>
-  );
+    </Stack>
+  )
 }

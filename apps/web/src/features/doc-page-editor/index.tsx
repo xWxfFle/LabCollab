@@ -1,22 +1,22 @@
-import { RichTextEditor } from '@mantine/tiptap';
-import { useEditor } from '@tiptap/react';
-import LinkExtension from '@tiptap/extension-link';
-import StarterKit from '@tiptap/starter-kit';
-import { ActionIcon, Paper, Text } from '@mantine/core';
-import { useState } from 'react';
+import { ActionIcon, Paper, Text } from '@mantine/core'
+import { RichTextEditor } from '@mantine/tiptap'
+import LinkExtension from '@tiptap/extension-link'
+import { useEditor } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import { useState } from 'react'
 import {
   handleInternalLinkClick,
   insertInternalLink,
   InternalLinkPicker,
   useInternalLinkNavigation,
-} from '@/features/internal-link';
+} from '@/features/internal-link'
 
 interface DocPageEditorProps {
-  editorKey: string;
-  content: string;
-  projectId: string;
-  onChange: (html: string) => void;
-  readOnly?: boolean;
+  editorKey: string
+  content: string
+  projectId: string
+  onChange: (html: string) => void
+  readOnly?: boolean
 }
 
 export function DocPageEditor({
@@ -26,8 +26,8 @@ export function DocPageEditor({
   onChange,
   readOnly,
 }: DocPageEditorProps) {
-  const [linkPickerOpened, setLinkPickerOpened] = useState(false);
-  const navigateInternal = useInternalLinkNavigation();
+  const [linkPickerOpened, setLinkPickerOpened] = useState(false)
+  const navigateInternal = useInternalLinkNavigation()
 
   const editor = useEditor(
     {
@@ -43,19 +43,19 @@ export function DocPageEditor({
       content: content || '<p></p>',
       editable: !readOnly,
       onUpdate: ({ editor: ed }) => {
-        onChange(ed.getHTML());
+        onChange(ed.getHTML())
       },
       editorProps: {
         handleClick: (view, pos, event) => {
           if (readOnly) {
-            return handleInternalLinkClick(event, navigateInternal);
+            return handleInternalLinkClick(event, navigateInternal)
           }
-          return false;
+          return false
         },
       },
     },
     [editorKey, readOnly],
-  );
+  )
 
   return (
     <Paper withBorder p="sm">
@@ -86,7 +86,7 @@ export function DocPageEditor({
           mih={320}
           onClick={(e) => {
             if (readOnly) {
-              handleInternalLinkClick(e.nativeEvent, navigateInternal);
+              handleInternalLinkClick(e.nativeEvent, navigateInternal)
             }
           }}
         />
@@ -105,5 +105,5 @@ export function DocPageEditor({
         />
       )}
     </Paper>
-  );
+  )
 }
