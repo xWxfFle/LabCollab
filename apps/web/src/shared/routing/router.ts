@@ -6,7 +6,7 @@ import { routes } from './routes'
 
 export const controls = createRouterControls()
 
-const history = createBrowserHistory()
+export const history = createBrowserHistory()
 
 export const router = createRouter({
   base: import.meta.env.BASE_URL,

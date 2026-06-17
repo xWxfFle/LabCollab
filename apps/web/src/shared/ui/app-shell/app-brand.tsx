@@ -2,10 +2,15 @@ import { Group, Text, ThemeIcon } from '@mantine/core'
 import { IconFlask } from '@tabler/icons-react'
 import { RouteLink, routes } from '@/shared/routing'
 
-export function AppBrand() {
+interface AppBrandProps {
+  /** На узком экране — только иконка (рядом с burger). */
+  compact?: boolean
+}
+
+export function AppBrand({ compact = false }: AppBrandProps) {
   return (
     <RouteLink to={routes.dashboard}>
-      <Group gap="sm" wrap="nowrap" style={{ cursor: 'pointer' }}>
+      <Group gap="sm" wrap="nowrap" style={{ cursor: 'pointer', minWidth: 0 }}>
         <ThemeIcon
           size="lg"
           radius="md"
@@ -14,7 +19,13 @@ export function AppBrand() {
         >
           <IconFlask size={20} stroke={1.75} />
         </ThemeIcon>
-        <Text component="span" fw={700} size="lg" lh={1}>
+        <Text
+          component="span"
+          fw={700}
+          size="lg"
+          lh={1}
+          visibleFrom={compact ? 'sm' : undefined}
+        >
           LabCollab
         </Text>
       </Group>

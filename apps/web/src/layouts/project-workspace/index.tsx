@@ -1,31 +1,33 @@
-import type { WorkspaceNodeDto } from '@labcollab/shared'
 import type { ReactNode } from 'react'
-import { useForm } from '@effector-reform/react'
 import {
   AppShell,
   Box,
-  Button,
+  Burger,
   Group,
   Modal,
-  Stack,
-  TextInput,
 } from '@mantine/core'
+import { useDisclosure } from '@mantine/hooks'
 import { useUnit } from 'effector-react'
 import {
   $createExperimentModalOpened,
   $moveModalOpened,
   $moveTarget,
   $projectId,
-  createExperimentForm,
+  $renameModalOpened,
+  $renameTarget,
+  CreateExperimentModal,
   createExperimentModalClosed,
+  MobileNavCloseProvider,
   nodeMoveConfirmed,
   nodeMoveModalClosed,
+  nodeRenameConfirmed,
+  nodeRenameModalClosed,
   ProjectSidebar,
   WorkspaceMoveModal,
+  WorkspaceRenameModal,
 } from '@/features/project-sidebar'
 import { workspaceQuery } from '@/shared/api'
-import { routes, RouteTextLink } from '@/shared/routing'
-import { UserMenu } from '@/shared/ui/app-shell'
+import { AppBrand, UserMenu } from '@/shared/ui/app-shell'
 import { WorkspaceAreaLoader } from '@/shared/ui/placeholders'
 
 interface ProjectWorkspaceLayoutProps {
@@ -50,34 +52,51 @@ export function ProjectWorkspaceLayout({
     createModalOpened,
     moveModalOpened,
     moveTarget,
+    renameModalOpened,
+    renameTarget,
     tree,
   ] = useUnit([
     $projectId,
     $createExperimentModalOpened,
     $moveModalOpened,
     $moveTarget,
+    $renameModalOpened,
+    $renameTarget,
     workspaceQuery.$data,
   ])
 
   const closeCreateModal = useUnit(createExperimentModalClosed)
   const closeMoveModal = useUnit(nodeMoveModalClosed)
+  const closeRenameModal = useUnit(nodeRenameModalClosed)
   const confirmMove = useUnit(nodeMoveConfirmed)
-  const { fields: createFields, onSubmit: onCreateSubmit } = useForm(createExperimentForm)
+  const confirmRename = useUnit(nodeRenameConfirmed)
 
-  // Лоадер только по явному loading — projectId держится при переходах внутри проекта.
+  const [mobileNavOpened, { toggle: toggleMobileNav, close: closeMobileNav }] = useDisclosure()
+
   const showLoader = loading
 
   return (
     <AppShell
       header={{ height: 56 }}
-      navbar={{ width: 280, breakpoint: 'sm' }}
+      navbar={{
+        width: 280,
+        breakpoint: 'sm',
+        collapsed: { mobile: !mobileNavOpened },
+      }}
       padding="md"
     >
       <AppShell.Header px="md">
         <Group h="100%" justify="space-between" wrap="nowrap">
-          <RouteTextLink to={routes.dashboard} c="violet">
-            ← Проекты
-          </RouteTextLink>
+          <Group gap="sm" wrap="nowrap" style={{ minWidth: 0, flex: 1 }}>
+            <Burger
+              opened={mobileNavOpened}
+              onClick={toggleMobileNav}
+              hiddenFrom="sm"
+              size="sm"
+              aria-label="Меню проекта"
+            />
+            <AppBrand compact />
+          </Group>
           <UserMenu />
         </Group>
       </AppShell.Header>
@@ -85,12 +104,14 @@ export function ProjectWorkspaceLayout({
       <AppShell.Navbar p="sm">
         {projectId
           ? (
-              <ProjectSidebar
-                projectId={projectId}
-                activePageId={activePageId}
-                activeExperimentId={activeExperimentId}
-                settingsActive={settingsActive}
-              />
+              <MobileNavCloseProvider onClose={closeMobileNav}>
+                <ProjectSidebar
+                  projectId={projectId}
+                  activePageId={activePageId}
+                  activeExperimentId={activeExperimentId}
+                  settingsActive={settingsActive}
+                />
+              </MobileNavCloseProvider>
             )
           : <Box />}
       </AppShell.Navbar>
@@ -112,34 +133,25 @@ export function ProjectWorkspaceLayout({
         onClose={() => closeCreateModal()}
         title="Новый эксперимент"
       >
-        <form onSubmit={onCreateSubmit}>
-          <Stack>
-            <TextInput
-              label="Название"
-              required
-              value={createFields.title.value}
-              onChange={e => createFields.title.onChange(e.currentTarget.value)}
-              onBlur={createFields.title.onBlur}
-            />
-            <TextInput
-              label="Цель"
-              required
-              value={createFields.objective.value}
-              onChange={e => createFields.objective.onChange(e.currentTarget.value)}
-              onBlur={createFields.objective.onBlur}
-            />
-            <Button type="submit">Создать</Button>
-          </Stack>
-        </form>
+        <CreateExperimentModal onClose={() => closeCreateModal()} />
       </Modal>
 
       <WorkspaceMoveModal
         opened={moveModalOpened}
-        tree={(tree ?? []) as WorkspaceNodeDto[]}
+        tree={(tree ?? []) as import('@labcollab/shared').WorkspaceNodeDto[]}
         nodeId={moveTarget?.nodeId ?? null}
         nodeType={moveTarget?.type ?? null}
         onClose={() => closeMoveModal()}
         onConfirm={parentId => confirmMove(parentId)}
+      />
+
+      <WorkspaceRenameModal
+        opened={renameModalOpened}
+        nodeKey={renameTarget?.nodeId ?? 'rename'}
+        initialTitle={renameTarget?.title ?? ''}
+        nodeLabel={renameTarget?.title ?? ''}
+        onClose={() => closeRenameModal()}
+        onConfirm={title => confirmRename(title)}
       />
     </AppShell>
   )
