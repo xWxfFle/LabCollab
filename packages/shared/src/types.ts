@@ -1,4 +1,11 @@
-import type { ExperimentStatus, ProjectNodeType, ProjectRole } from './index'
+import type {
+  ExperimentChecklistItem,
+  ExperimentFieldDefinition,
+  ExperimentStatus,
+  ExperimentTemplateScope,
+  ProjectNodeType,
+  ProjectRole,
+} from './index'
 
 export interface UserDto {
   id: string
@@ -27,6 +34,19 @@ export interface ProjectMemberDto {
   role: ProjectRole
 }
 
+export interface ExperimentTemplateDto {
+  id: string
+  name: string
+  scope: ExperimentTemplateScope
+  userId: string | null
+  projectId: string | null
+  fieldDefinitions: ExperimentFieldDefinition[]
+  defaultObservations: string | null
+  defaultChecklist: Array<{ text: string, order: number }>
+  createdAt: string
+  updatedAt: string
+}
+
 export interface ExperimentDto {
   id: string
   projectId: string
@@ -34,12 +54,10 @@ export interface ExperimentDto {
   authorDisplayName: string | null
   title: string
   status: ExperimentStatus
-  hypothesis: string | null
-  objective: string
-  materials: string | null
-  protocolSteps: string | null
-  conditions: string | null
-  results: string | null
+  templateId: string | null
+  fieldDefinitions: ExperimentFieldDefinition[]
+  fieldValues: Record<string, string>
+  checklist: ExperimentChecklistItem[]
   observationsText: string | null
   tags: string[]
   conductedAt: string | null
@@ -51,6 +69,7 @@ export interface ExperimentVersionDto {
   id: string
   experimentId: string
   createdBy: string
+  createdByDisplayName: string
   createdAt: string
   snapshot: ExperimentSnapshot
 }
@@ -60,16 +79,28 @@ export type ExperimentSnapshot = Pick<
   ExperimentDto,
   | 'title'
   | 'status'
-  | 'hypothesis'
-  | 'objective'
-  | 'materials'
-  | 'protocolSteps'
-  | 'conditions'
-  | 'results'
+  | 'fieldDefinitions'
+  | 'fieldValues'
+  | 'checklist'
   | 'observationsText'
   | 'tags'
   | 'conductedAt'
 >
+
+/** Legacy-формат снапшота до шаблонов */
+export interface LegacyExperimentSnapshot {
+  title: string
+  status: ExperimentStatus | 'completed'
+  hypothesis?: string | null
+  objective?: string
+  materials?: string | null
+  protocolSteps?: string | null
+  conditions?: string | null
+  results?: string | null
+  observationsText?: string | null
+  tags?: string[]
+  conductedAt?: string | null
+}
 
 export interface AttachmentDto {
   id: string
@@ -101,6 +132,7 @@ export interface WorkspaceNodeDto {
   pageId: string | null
   experimentId: string | null
   experimentStatus: ExperimentStatus | null
+  experimentTags: string[] | null
   children: WorkspaceNodeDto[]
 }
 
@@ -121,6 +153,7 @@ export interface ProjectPageVersionDto {
   id: string
   pageId: string
   createdBy: string
+  createdByDisplayName: string
   createdAt: string
   snapshot: ProjectPageSnapshot
 }

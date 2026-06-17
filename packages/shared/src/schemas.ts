@@ -1,7 +1,18 @@
 import { z } from 'zod'
+import {
+  experimentChecklistSchema,
+  fieldValuesSchema,
+  templateChecklistSeedSchema,
+} from './experiment-fields'
 
 export const projectRoleSchema = z.enum(['owner', 'editor', 'viewer'])
-export const experimentStatusSchema = z.enum(['draft', 'in_progress', 'completed'])
+export const experimentStatusSchema = z.enum([
+  'draft',
+  'in_progress',
+  'completed_success',
+  'completed_failure',
+])
+export const experimentTemplateScopeSchema = z.enum(['user', 'project'])
 
 export const registerSchema = z.object({
   email: z.email(),
@@ -39,19 +50,24 @@ export const projectNodeTypeSchema = z.enum(['folder', 'page', 'experiment'])
 
 export const createExperimentSchema = z.object({
   title: z.string().min(1).max(300),
-  objective: z.string().min(1),
   parentNodeId: z.string().uuid().optional(),
+  templateId: z.string().uuid().optional(),
   status: experimentStatusSchema.optional(),
-  hypothesis: z.string().optional(),
-  materials: z.string().optional(),
-  protocolSteps: z.string().optional(),
-  conditions: z.string().optional(),
-  results: z.string().optional(),
   tags: experimentTagsSchema.optional(),
   conductedAt: z.string().datetime().optional().nullable(),
 })
 
-export const updateExperimentSchema = createExperimentSchema.partial()
+export const updateExperimentSchema = z.object({
+  title: z.string().min(1).max(300).optional(),
+  parentNodeId: z.string().uuid().optional(),
+  templateId: z.string().uuid().optional(),
+  status: experimentStatusSchema.optional(),
+  fieldValues: fieldValuesSchema.optional(),
+  checklist: experimentChecklistSchema.optional(),
+  observationsText: z.string().max(500_000).optional(),
+  tags: experimentTagsSchema.optional(),
+  conductedAt: z.string().datetime().optional().nullable(),
+})
 
 export const listExperimentsQuerySchema = z.object({
   status: experimentStatusSchema.optional(),
@@ -90,6 +106,27 @@ export const workspaceSearchQuerySchema = z.object({
   q: z.string().min(1).max(200),
 })
 
+const templateFieldInputSchema = z.object({
+  id: z.string().uuid().optional(),
+  label: z.string().min(1).max(200),
+  required: z.boolean(),
+  order: z.number().int().min(0),
+  defaultValue: z.string().max(50_000).optional(),
+})
+
+export const createExperimentTemplateSchema = z.object({
+  name: z.string().min(1).max(200),
+  fieldDefinitions: z.array(templateFieldInputSchema).min(1),
+  defaultObservations: z.string().max(500_000).optional().nullable(),
+  defaultChecklist: templateChecklistSeedSchema.optional(),
+})
+
+export const updateExperimentTemplateSchema = createExperimentTemplateSchema.partial()
+
+export const copyUserExperimentTemplateToProjectSchema = z.object({
+  sourceTemplateId: z.string().uuid(),
+})
+
 export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>
 export type CreateProjectInput = z.infer<typeof createProjectSchema>
@@ -106,3 +143,8 @@ export type UpdateWorkspaceNodeInput = z.infer<typeof updateWorkspaceNodeSchema>
 export type MoveWorkspaceNodeInput = z.infer<typeof moveWorkspaceNodeSchema>
 export type UpdateProjectPageInput = z.infer<typeof updateProjectPageSchema>
 export type WorkspaceSearchQuery = z.infer<typeof workspaceSearchQuerySchema>
+export type CreateExperimentTemplateInput = z.infer<typeof createExperimentTemplateSchema>
+export type UpdateExperimentTemplateInput = z.infer<typeof updateExperimentTemplateSchema>
+export type CopyUserExperimentTemplateToProjectInput = z.infer<
+  typeof copyUserExperimentTemplateToProjectSchema
+>
