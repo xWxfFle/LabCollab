@@ -1,1 +1,3 @@
-export { ExperimentCommentsPanel } from './experiment-comments-panel';
+import './model'
+
+export { ExperimentCommentsPanel } from './experiment-comments-panel'

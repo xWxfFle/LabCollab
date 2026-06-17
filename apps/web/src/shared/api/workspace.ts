@@ -1,10 +1,3 @@
-import {
-  createJsonMutation,
-  createJsonQuery,
-  declareParams,
-  unknownContract,
-} from '@farfetched/core';
-import { zodContract } from '@farfetched/zod';
 import type {
   CreateFolderInput,
   CreateProjectPageInput,
@@ -12,14 +5,21 @@ import type {
   MoveWorkspaceNodeInput,
   UpdateProjectPageInput,
   UpdateWorkspaceNodeInput,
-} from '@labcollab/shared';
-import { getAuthHeaders } from './base';
+} from '@labcollab/shared'
 import {
-  projectPageDtoSchema,
+  createJsonMutation,
+  createJsonQuery,
+  declareParams,
+  unknownContract,
+} from '@farfetched/core'
+import { zodContract } from '@farfetched/zod'
+import { getAuthHeaders } from './base'
+import {
   pageVersionsListSchema,
+  projectPageDtoSchema,
   workspaceSearchResultSchema,
   workspaceTreeSchema,
-} from './contracts';
+} from './contracts'
 
 export const workspaceQuery = createJsonQuery({
   name: 'workspace',
@@ -30,11 +30,11 @@ export const workspaceQuery = createJsonQuery({
     headers: getAuthHeaders,
   },
   response: { contract: zodContract(workspaceTreeSchema) },
-});
+})
 
 export const workspaceSearchQuery = createJsonQuery({
   name: 'workspaceSearch',
-  params: declareParams<{ projectId: string; q: string }>(),
+  params: declareParams<{ projectId: string, q: string }>(),
   request: {
     method: 'GET',
     url: ({ projectId, q }) =>
@@ -42,7 +42,7 @@ export const workspaceSearchQuery = createJsonQuery({
     headers: getAuthHeaders,
   },
   response: { contract: zodContract(workspaceSearchResultSchema) },
-});
+})
 
 export const projectPageQuery = createJsonQuery({
   name: 'projectPage',
@@ -53,93 +53,93 @@ export const projectPageQuery = createJsonQuery({
     headers: getAuthHeaders,
   },
   response: { contract: zodContract(projectPageDtoSchema) },
-});
+})
 
 export const createFolderMutation = createJsonMutation({
   name: 'createFolder',
   params: declareParams<{ projectId: string } & CreateFolderInput>(),
   request: {
     method: 'POST',
-    url: (params) => `/api/projects/${params.projectId}/folders`,
-    body: (params) => ({
+    url: params => `/api/projects/${params.projectId}/folders`,
+    body: params => ({
       title: params.title,
       parentId: params.parentId,
     }),
     headers: getAuthHeaders,
   },
   response: { contract: unknownContract },
-});
+})
 
 export const createPageMutation = createJsonMutation({
   name: 'createPage',
   params: declareParams<{ projectId: string } & CreateProjectPageInput>(),
   request: {
     method: 'POST',
-    url: (params) => `/api/projects/${params.projectId}/pages`,
-    body: (params) => ({
+    url: params => `/api/projects/${params.projectId}/pages`,
+    body: params => ({
       title: params.title,
       parentId: params.parentId,
     }),
     headers: getAuthHeaders,
   },
   response: { contract: zodContract(projectPageDtoSchema) },
-});
+})
 
 export const patchPageMutation = createJsonMutation({
   name: 'patchPage',
   params: declareParams<{ id: string } & UpdateProjectPageInput>(),
   request: {
     method: 'PATCH',
-    url: (params) => `/api/pages/${params.id}`,
+    url: params => `/api/pages/${params.id}`,
     body: (params) => {
-      const { id: _id, ...body } = params;
-      return body;
+      const { id: _id, ...body } = params
+      return body
     },
     headers: getAuthHeaders,
   },
   response: { contract: zodContract(projectPageDtoSchema) },
-});
+})
 
 export const patchWorkspaceNodeMutation = createJsonMutation({
   name: 'patchWorkspaceNode',
   params: declareParams<{ id: string } & UpdateWorkspaceNodeInput>(),
   request: {
     method: 'PATCH',
-    url: (params) => `/api/workspace/nodes/${params.id}`,
+    url: params => `/api/workspace/nodes/${params.id}`,
     body: (params) => {
-      const { id: _id, ...body } = params;
-      return body;
+      const { id: _id, ...body } = params
+      return body
     },
     headers: getAuthHeaders,
   },
   response: { contract: unknownContract },
-});
+})
 
 export const moveWorkspaceNodeMutation = createJsonMutation({
   name: 'moveWorkspaceNode',
   params: declareParams<{ id: string } & MoveWorkspaceNodeInput>(),
   request: {
     method: 'PATCH',
-    url: (params) => `/api/workspace/nodes/${params.id}/move`,
+    url: params => `/api/workspace/nodes/${params.id}/move`,
     body: (params) => {
-      const { id: _id, ...body } = params;
-      return body;
+      const { id: _id, ...body } = params
+      return body
     },
     headers: getAuthHeaders,
   },
   response: { contract: unknownContract },
-});
+})
 
 export const deleteWorkspaceNodeMutation = createJsonMutation({
   name: 'deleteWorkspaceNode',
   params: declareParams<{ id: string }>(),
   request: {
     method: 'DELETE',
-    url: (params) => `/api/workspace/nodes/${params.id}`,
+    url: params => `/api/workspace/nodes/${params.id}`,
     headers: getAuthHeaders,
   },
   response: { contract: unknownContract },
-});
+})
 
 export const pageVersionsQuery = createJsonQuery({
   name: 'pageVersions',
@@ -150,6 +150,6 @@ export const pageVersionsQuery = createJsonQuery({
     headers: getAuthHeaders,
   },
   response: { contract: zodContract(pageVersionsListSchema) },
-});
+})
 
-export type WorkspaceStatusFilter = ExperimentStatus | 'all';
+export type WorkspaceStatusFilter = ExperimentStatus | 'all'

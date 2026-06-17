@@ -1,12 +1,12 @@
+import type { LoginInput, RegisterInput } from '@labcollab/shared'
 import {
   createJsonMutation,
   createJsonQuery,
   declareParams,
-} from '@farfetched/core';
-import { zodContract } from '@farfetched/zod';
-import type { LoginInput, RegisterInput } from '@labcollab/shared';
-import { getAuthHeaders } from './base';
-import { authResponseSchema, meResponseSchema } from './contracts';
+} from '@farfetched/core'
+import { zodContract } from '@farfetched/zod'
+import { getAuthHeaders } from './base'
+import { authResponseSchema, meResponseSchema } from './contracts'
 
 export const viewerQuery = createJsonQuery({
   name: 'viewer',
@@ -17,7 +17,7 @@ export const viewerQuery = createJsonQuery({
     headers: getAuthHeaders,
   },
   response: { contract: zodContract(meResponseSchema) },
-});
+})
 
 export const loginMutation = createJsonMutation({
   name: 'login',
@@ -25,11 +25,11 @@ export const loginMutation = createJsonMutation({
   request: {
     method: 'POST',
     url: '/api/auth/login',
-    body: (params) => params,
+    body: params => params,
     headers: { 'Content-Type': 'application/json' },
   },
   response: { contract: zodContract(authResponseSchema) },
-});
+})
 
 export const registerMutation = createJsonMutation({
   name: 'register',
@@ -37,8 +37,8 @@ export const registerMutation = createJsonMutation({
   request: {
     method: 'POST',
     url: '/api/auth/register',
-    body: (params) => params,
+    body: params => params,
     headers: { 'Content-Type': 'application/json' },
   },
   response: { contract: zodContract(authResponseSchema) },
-});
+})

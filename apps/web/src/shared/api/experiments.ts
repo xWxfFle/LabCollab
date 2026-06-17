@@ -1,34 +1,36 @@
+import type { CreateExperimentInput, ExperimentStatus, UpdateExperimentInput } from '@labcollab/shared'
 import {
   createJsonMutation,
   createJsonQuery,
   declareParams,
   unknownContract,
-} from '@farfetched/core';
-import { zodContract } from '@farfetched/zod';
-import type { CreateExperimentInput, ExperimentStatus, UpdateExperimentInput } from '@labcollab/shared';
-import { getAuthHeaders } from './base';
+} from '@farfetched/core'
+import { zodContract } from '@farfetched/zod'
+import { getAuthHeaders } from './base'
 import {
   attachmentsListSchema,
   experimentDtoSchema,
   experimentsListSchema,
   versionsListSchema,
-} from './contracts';
+} from './contracts'
 
-type CreateExperimentParams = { projectId: string } & CreateExperimentInput;
-type PatchExperimentParams = { id: string } & UpdateExperimentInput & { observationsText?: string };
+type CreateExperimentParams = { projectId: string } & CreateExperimentInput
+type PatchExperimentParams = { id: string } & UpdateExperimentInput & { observationsText?: string }
 
-type ListExperimentsParams = {
-  projectId: string;
-  status?: ExperimentStatus;
-  q?: string;
-};
+interface ListExperimentsParams {
+  projectId: string
+  status?: ExperimentStatus
+  q?: string
+}
 
 function experimentsListUrl({ projectId, status, q }: ListExperimentsParams) {
-  const search = new URLSearchParams();
-  if (status) search.set('status', status);
-  if (q) search.set('q', q);
-  const qs = search.toString();
-  return `/api/projects/${projectId}/experiments${qs ? `?${qs}` : ''}`;
+  const search = new URLSearchParams()
+  if (status)
+    search.set('status', status)
+  if (q)
+    search.set('q', q)
+  const qs = search.toString()
+  return `/api/projects/${projectId}/experiments${qs ? `?${qs}` : ''}`
 }
 
 export const experimentsQuery = createJsonQuery({
@@ -40,7 +42,7 @@ export const experimentsQuery = createJsonQuery({
     headers: getAuthHeaders,
   },
   response: { contract: zodContract(experimentsListSchema) },
-});
+})
 
 export const experimentQuery = createJsonQuery({
   name: 'experiment',
@@ -51,15 +53,15 @@ export const experimentQuery = createJsonQuery({
     headers: getAuthHeaders,
   },
   response: { contract: zodContract(experimentDtoSchema) },
-});
+})
 
 export const createExperimentMutation = createJsonMutation({
   name: 'createExperiment',
   params: declareParams<CreateExperimentParams>(),
   request: {
     method: 'POST',
-    url: (params) => `/api/projects/${params.projectId}/experiments`,
-    body: (params) => ({
+    url: params => `/api/projects/${params.projectId}/experiments`,
+    body: params => ({
       title: params.title,
       objective: params.objective,
       parentNodeId: params.parentNodeId,
@@ -75,33 +77,33 @@ export const createExperimentMutation = createJsonMutation({
     headers: getAuthHeaders,
   },
   response: { contract: zodContract(experimentDtoSchema) },
-});
+})
 
 export const patchExperimentMutation = createJsonMutation({
   name: 'patchExperiment',
   params: declareParams<PatchExperimentParams>(),
   request: {
     method: 'PATCH',
-    url: (params) => `/api/experiments/${params.id}`,
+    url: params => `/api/experiments/${params.id}`,
     body: (params) => {
-      const { id: _id, ...body } = params;
-      return body;
+      const { id: _id, ...body } = params
+      return body
     },
     headers: getAuthHeaders,
   },
   response: { contract: zodContract(experimentDtoSchema) },
-});
+})
 
 export const deleteExperimentMutation = createJsonMutation({
   name: 'deleteExperiment',
   params: declareParams<{ id: string }>(),
   request: {
     method: 'DELETE',
-    url: (params) => `/api/experiments/${params.id}`,
+    url: params => `/api/experiments/${params.id}`,
     headers: getAuthHeaders,
   },
   response: { contract: unknownContract },
-});
+})
 
 export const versionsQuery = createJsonQuery({
   name: 'versions',
@@ -112,7 +114,7 @@ export const versionsQuery = createJsonQuery({
     headers: getAuthHeaders,
   },
   response: { contract: zodContract(versionsListSchema) },
-});
+})
 
 export const attachmentsQuery = createJsonQuery({
   name: 'attachments',
@@ -123,4 +125,4 @@ export const attachmentsQuery = createJsonQuery({
     headers: getAuthHeaders,
   },
   response: { contract: zodContract(attachmentsListSchema) },
-});
+})

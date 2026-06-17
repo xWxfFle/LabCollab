@@ -1,9 +1,9 @@
-import { TagsInput } from '@mantine/core';
+import { TagsInput } from '@mantine/core'
 
 interface ExperimentTagsInputProps {
-  value: string[];
-  onChange: (tags: string[]) => void;
-  readOnly?: boolean;
+  value: string[]
+  onChange: (tags: string[]) => void
+  readOnly?: boolean
 }
 
 export function ExperimentTagsInput({ value, onChange, readOnly }: ExperimentTagsInputProps) {
@@ -15,7 +15,7 @@ export function ExperimentTagsInput({ value, onChange, readOnly }: ExperimentTag
         readOnly
         data={value}
       />
-    );
+    )
   }
 
   return (
@@ -27,5 +27,5 @@ export function ExperimentTagsInput({ value, onChange, readOnly }: ExperimentTag
       splitChars={[',', ' ']}
       clearable
     />
-  );
+  )
 }

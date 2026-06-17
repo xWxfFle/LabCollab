@@ -1,1 +1,1 @@
-export { ExperimentTagsInput } from './experiment-tags-input';
+export { ExperimentTagsInput } from './experiment-tags-input'

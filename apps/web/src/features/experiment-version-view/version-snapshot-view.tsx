@@ -1,21 +1,17 @@
-import type { ExperimentSnapshot } from '@labcollab/shared';
-import { Paper, Stack, Text, Textarea } from '@mantine/core';
-import { ObservationsEditor } from '@/features/observations-editor';
-
-const STATUS_LABELS: Record<string, string> = {
-  draft: 'Черновик',
-  in_progress: 'В процессе',
-  completed: 'Завершён',
-};
+import type { ExperimentSnapshot } from '@labcollab/shared'
+import { Paper, Stack, Text, Textarea } from '@mantine/core'
+import { ObservationsEditor } from '@/features/observations-editor'
+import { experimentStatusLabels } from '@/shared/lib'
 
 interface VersionSnapshotViewProps {
-  snapshot: ExperimentSnapshot;
-  editorKey: string;
+  snapshot: ExperimentSnapshot
+  editorKey: string
 }
 
-function ReadOnlyField({ label, value }: { label: string; value: string | null | undefined }) {
-  if (!value) return null;
-  return <Textarea label={label} value={value} readOnly autosize minRows={1} />;
+function ReadOnlyField({ label, value }: { label: string, value: string | null | undefined }) {
+  if (!value)
+    return null
+  return <Textarea label={label} value={value} readOnly autosize minRows={1} />
 }
 
 export function VersionSnapshotView({ snapshot, editorKey }: VersionSnapshotViewProps) {
@@ -25,7 +21,9 @@ export function VersionSnapshotView({ snapshot, editorKey }: VersionSnapshotView
         {snapshot.title}
       </Text>
       <Text size="xs" c="dimmed">
-        Статус: {STATUS_LABELS[snapshot.status] ?? snapshot.status}
+        Статус:
+        {' '}
+        {experimentStatusLabels[snapshot.status] ?? snapshot.status}
       </Text>
       <ReadOnlyField label="Цель" value={snapshot.objective} />
       <ReadOnlyField label="Гипотеза" value={snapshot.hypothesis} />
@@ -48,5 +46,5 @@ export function VersionSnapshotView({ snapshot, editorKey }: VersionSnapshotView
         readOnly
       />
     </Stack>
-  );
+  )
 }
