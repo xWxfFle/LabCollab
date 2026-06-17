@@ -1,9 +1,10 @@
-import { ActionIcon, Paper, Text } from '@mantine/core'
+import { Paper, Text } from '@mantine/core'
 import { RichTextEditor } from '@mantine/tiptap'
+import { IconAt } from '@tabler/icons-react'
 import LinkExtension from '@tiptap/extension-link'
 import { useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import {
   handleInternalLinkClick,
   insertInternalLink,
@@ -19,13 +20,13 @@ interface DocPageEditorProps {
   readOnly?: boolean
 }
 
-export function DocPageEditor({
+export const DocPageEditor = memo(({
   editorKey,
   content,
   projectId,
   onChange,
   readOnly,
-}: DocPageEditorProps) {
+}: DocPageEditorProps) => {
   const [linkPickerOpened, setLinkPickerOpened] = useState(false)
   const navigateInternal = useInternalLinkNavigation()
 
@@ -71,14 +72,15 @@ export function DocPageEditor({
             <RichTextEditor.ControlsGroup>
               <RichTextEditor.Link />
               <RichTextEditor.Unlink />
-              <ActionIcon
-                variant="default"
-                size="lg"
-                aria-label="Внутренняя ссылка"
+            </RichTextEditor.ControlsGroup>
+            <RichTextEditor.ControlsGroup>
+              <RichTextEditor.Control
                 onClick={() => setLinkPickerOpened(true)}
+                aria-label="Внутренняя ссылка"
+                title="Ссылка на страницу или эксперимент"
               >
-                @
-              </ActionIcon>
+                <IconAt size={16} stroke={1.5} />
+              </RichTextEditor.Control>
             </RichTextEditor.ControlsGroup>
           </RichTextEditor.Toolbar>
         )}
@@ -106,4 +108,4 @@ export function DocPageEditor({
       )}
     </Paper>
   )
-}
+})
