@@ -1,5 +1,7 @@
 import type { Editor } from '@tiptap/react'
 import { useRouter } from '@argon-router/react'
+import { useUnit } from 'effector-react'
+import { $workspaceFiltersQuery } from '@/features/project-sidebar/model'
 
 export function handleInternalLinkClick(event: MouseEvent, onNavigate: (path: string) => void) {
   const target = event.target as HTMLElement | null
@@ -18,8 +20,9 @@ export function handleInternalLinkClick(event: MouseEvent, onNavigate: (path: st
 
 export function useInternalLinkNavigation() {
   const { onNavigate } = useRouter()
+  const workspaceQuery = useUnit($workspaceFiltersQuery)
 
-  return (path: string) => onNavigate({ path, query: {} })
+  return (path: string) => onNavigate({ path, query: workspaceQuery })
 }
 
 export function insertInternalLink(editor: Editor, href: string, label: string) {

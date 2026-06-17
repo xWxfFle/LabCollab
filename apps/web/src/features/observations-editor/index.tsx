@@ -3,6 +3,7 @@ import { RichTextEditor } from '@mantine/tiptap'
 import LinkExtension from '@tiptap/extension-link'
 import { useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
+import { memo } from 'react'
 
 interface ObservationsEditorProps {
   editorKey: string
@@ -11,12 +12,12 @@ interface ObservationsEditorProps {
   readOnly?: boolean
 }
 
-export function ObservationsEditor({
+export const ObservationsEditor = memo(({
   editorKey,
   content,
   onChange,
   readOnly,
-}: ObservationsEditorProps) {
+}: ObservationsEditorProps) => {
   const editor = useEditor(
     {
       extensions: [
@@ -63,4 +64,4 @@ export function ObservationsEditor({
       </RichTextEditor>
     </Paper>
   )
-}
+})

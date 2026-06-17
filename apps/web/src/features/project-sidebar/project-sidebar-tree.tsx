@@ -1,5 +1,5 @@
-import type { ExperimentStatus, ProjectNodeType, WorkspaceNodeDto } from '@labcollab/shared'
-import { Badge, Group, NavLink, Stack, Text, ThemeIcon } from '@mantine/core'
+import type { ProjectNodeType, WorkspaceNodeDto } from '@labcollab/shared'
+import { Badge, Box, Collapse, Group, NavLink, Stack, Text, ThemeIcon } from '@mantine/core'
 import {
   IconChevronRight,
   IconFileText,
@@ -8,7 +8,7 @@ import {
 } from '@tabler/icons-react'
 import { useUnit } from 'effector-react'
 import { useState } from 'react'
-import { confirmAction, experimentStatusMeta } from '@/shared/lib'
+import { confirmAction, experimentStatusMeta, experimentStatusShortLabels } from '@/shared/lib'
 import { routes } from '@/shared/routing'
 import {
   filterWorkspaceTree,
@@ -18,21 +18,17 @@ import {
 import {
   $canEdit,
   $statusFilter,
+  $tagFilter,
   newExperimentClicked,
   newFolderClicked,
   newPageClicked,
   nodeDeleteClicked,
   nodeMoveClicked,
+  nodeRenameClicked,
 } from './model'
 import { WorkspaceNodeMenu } from './workspace-node-menu'
 import { treeIconProps, workspaceTreeNavLinkProps } from './workspace-tree-icons'
 import { WorkspaceTreeNavLink } from './workspace-tree-nav-link'
-
-const experimentStatusShort: Record<ExperimentStatus, string> = {
-  draft: 'Черн.',
-  in_progress: 'В раб.',
-  completed: 'Готово',
-}
 
 function confirmDelete(node: WorkspaceNodeDto): boolean {
   if (node.type === 'folder') {
@@ -94,6 +90,12 @@ interface TreeNodeProps {
     pageId?: string | null
   }) => void
   onMove: (payload: { nodeId: string, type: ProjectNodeType }) => void
+  onRename: (payload: {
+    nodeId: string
+    type: ProjectNodeType
+    title: string
+    pageId?: string | null
+  }) => void
 }
 
 function TreeNode({
@@ -109,6 +111,7 @@ function TreeNode({
   onNewExperiment,
   onDelete,
   onMove,
+  onRename,
 }: TreeNodeProps) {
   const folderParentId = node.type === 'folder' ? node.id : null
 
@@ -119,6 +122,17 @@ function TreeNode({
           onCreateFolder={() => onNewFolder(folderParentId)}
           onCreatePage={() => onNewPage(folderParentId)}
           onCreateExperiment={() => onNewExperiment(folderParentId)}
+          onRename={
+            node.type === 'folder' || node.type === 'page'
+              ? () =>
+                  onRename({
+                    nodeId: node.id,
+                    type: node.type,
+                    title: node.title,
+                    pageId: node.pageId,
+                  })
+              : undefined
+          }
           onMove={() => onMove({ nodeId: node.id, type: node.type })}
           onDelete={() => {
             if (!confirmDelete(node))
@@ -138,41 +152,63 @@ function TreeNode({
     const opened = !collapsed.has(node.id)
 
     return (
-      <NavLink
-        {...workspaceTreeNavLinkProps}
-        label={node.title}
-        leftSection={nodeLeftSection('folder')}
-        rightSection={(
-          <Group gap={2} wrap="nowrap">
-            {menu}
-            <FolderChevron opened={opened} />
-          </Group>
-        )}
-        opened={opened}
-        onChange={value => onFolderOpen(node.id, value)}
-        variant="subtle"
-        noWrap
-        childrenOffset="md"
-        disableRightSectionRotation
-      >
-        {node.children.map(child => (
-          <TreeNode
-            key={child.id}
-            node={child}
-            projectId={projectId}
-            activePageId={activePageId}
-            activeExperimentId={activeExperimentId}
-            collapsed={collapsed}
-            canEdit={canEdit}
-            onFolderOpen={onFolderOpen}
-            onNewFolder={onNewFolder}
-            onNewPage={onNewPage}
-            onNewExperiment={onNewExperiment}
-            onDelete={onDelete}
-            onMove={onMove}
+      <Stack gap={2}>
+        <Box
+          style={{
+            display: 'flex',
+            alignItems: 'stretch',
+            width: '100%',
+          }}
+        >
+          <NavLink
+            {...workspaceTreeNavLinkProps}
+            component="button"
+            type="button"
+            label={node.title}
+            leftSection={nodeLeftSection('folder')}
+            rightSection={<FolderChevron opened={opened} />}
+            variant="subtle"
+            noWrap
+            disableRightSectionRotation
+            onClick={() => onFolderOpen(node.id, !opened)}
+            style={{ flex: 1, minWidth: 0 }}
           />
-        ))}
-      </NavLink>
+          {menu && (
+            <Box
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                flexShrink: 0,
+                paddingRight: 'var(--mantine-spacing-xs)',
+              }}
+            >
+              {menu}
+            </Box>
+          )}
+        </Box>
+        <Collapse expanded={opened}>
+          <Stack gap={2} pl="md">
+            {node.children.map(child => (
+              <TreeNode
+                key={child.id}
+                node={child}
+                projectId={projectId}
+                activePageId={activePageId}
+                activeExperimentId={activeExperimentId}
+                collapsed={collapsed}
+                canEdit={canEdit}
+                onFolderOpen={onFolderOpen}
+                onNewFolder={onNewFolder}
+                onNewPage={onNewPage}
+                onNewExperiment={onNewExperiment}
+                onDelete={onDelete}
+                onMove={onMove}
+                onRename={onRename}
+              />
+            ))}
+          </Stack>
+        </Collapse>
+      </Stack>
     )
   }
 
@@ -209,7 +245,7 @@ function TreeNode({
                 color={statusMeta.color}
                 style={{ flexShrink: 0 }}
               >
-                {experimentStatusShort[status!]}
+                {experimentStatusShortLabels[status!]}
               </Badge>
             )}
           </Group>
@@ -237,19 +273,21 @@ export function ProjectSidebarTree({
   activePageId,
   activeExperimentId,
 }: ProjectSidebarTreeProps) {
-  const [statusFilter, canEdit] = useUnit([$statusFilter, $canEdit])
+  const [statusFilter, tagFilter, canEdit] = useUnit([$statusFilter, $tagFilter, $canEdit])
   const [
     onNewFolder,
     onNewPage,
     onNewExperiment,
     onDelete,
     onMove,
+    onRename,
   ] = useUnit([
     newFolderClicked,
     newPageClicked,
     newExperimentClicked,
     nodeDeleteClicked,
     nodeMoveClicked,
+    nodeRenameClicked,
   ])
 
   const [collapsed, setCollapsed] = useState(() => readCollapsedFolders(projectId))
@@ -265,7 +303,7 @@ export function ProjectSidebarTree({
     })
   }
 
-  const filtered = filterWorkspaceTree(tree, statusFilter)
+  const filtered = filterWorkspaceTree(tree, statusFilter, tagFilter)
 
   if (filtered.length === 0) {
     return (
@@ -292,6 +330,7 @@ export function ProjectSidebarTree({
           onNewExperiment={onNewExperiment}
           onDelete={onDelete}
           onMove={onMove}
+          onRename={onRename}
         />
       ))}
     </Stack>

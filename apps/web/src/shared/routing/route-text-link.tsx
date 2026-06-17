@@ -8,6 +8,7 @@ type RouteTextLinkProps<Params extends object | void = void> = {
   to: Route<Params>
   params?: Params extends void | undefined ? never : Params
   children: React.ReactNode
+  afterNavigate?: () => void
 } & TextProps
 
 /** Текстовая ссылка с навигацией argon-router. */
@@ -15,6 +16,7 @@ export function RouteTextLink<Params extends object | void = void>({
   to,
   params,
   children,
+  afterNavigate,
   ...textProps
 }: RouteTextLinkProps<Params>) {
   const { path } = useLink(to, params as never)
@@ -32,6 +34,7 @@ export function RouteTextLink<Params extends object | void = void>({
     }
     event.preventDefault()
     onNavigate({ path, query: {} })
+    afterNavigate?.()
   }
 
   return (

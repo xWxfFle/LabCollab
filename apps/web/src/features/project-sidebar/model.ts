@@ -4,25 +4,41 @@ import { zodAdapter } from '@effector-reform/zod'
 import { createExperimentSchema } from '@labcollab/shared'
 import { combine, createEvent, createStore, merge, restore, sample } from 'effector'
 import { debounce, previous, reset } from 'patronum'
+import { createExperimentTemplatesLoadRequested } from '@/features/experiment-template-editor/model'
 import {
+  copyUserExperimentTemplateToProjectMutation,
   createExperimentMutation,
   createFolderMutation,
   createPageMutation,
   deleteExperimentMutation,
   deleteWorkspaceNodeMutation,
   moveWorkspaceNodeMutation,
+  patchWorkspaceNodeMutation,
+  projectExperimentTemplatesQuery,
+  projectPageQuery,
   projectQuery,
   workspaceQuery,
   workspaceSearchQuery,
 } from '@/shared/api'
-import { router, routes } from '@/shared/routing'
+import { controls, router, routes } from '@/shared/routing'
+import {
+  parseWorkspaceFiltersFromQuery,
+  workspaceFiltersToQuery,
+} from './workspace-filters-query'
 
 export const newFolderClicked = createEvent<string | null>()
 export const newPageClicked = createEvent<string | null>()
 export const newExperimentClicked = createEvent<string | null>()
 export const createExperimentModalClosed = createEvent()
+export const createTemplateIdChanged = createEvent<string | null>()
 export const statusFilterChanged = createEvent<ExperimentStatus | 'all'>()
+export const tagFilterChanged = createEvent<string | null>()
 export const searchQueryChanged = createEvent<string>()
+export const workspaceFiltersApplied = createEvent<{
+  status: ExperimentStatus | 'all'
+  tag: string | null
+  search: string
+}>()
 export const workspaceRefreshRequested = createEvent()
 
 export const nodeDeleteClicked = createEvent<{
@@ -35,6 +51,15 @@ export const nodeDeleteClicked = createEvent<{
 export const nodeMoveClicked = createEvent<{ nodeId: string, type: ProjectNodeType }>()
 export const nodeMoveModalClosed = createEvent()
 export const nodeMoveConfirmed = createEvent<string | null>()
+
+export const nodeRenameClicked = createEvent<{
+  nodeId: string
+  type: ProjectNodeType
+  title: string
+  pageId?: string | null
+}>()
+export const nodeRenameModalClosed = createEvent()
+export const nodeRenameConfirmed = createEvent<string>()
 
 export const $lastDeleteTarget = createStore<{
   pageId?: string
@@ -129,8 +154,37 @@ export const $moveTarget = createStore<{ nodeId: string, type: ProjectNodeType }
   .on(nodeMoveClicked, (_, payload) => payload)
   .reset(nodeMoveModalClosed)
 
+export const $renameModalOpened = createStore(false)
+  .on(nodeRenameClicked, () => true)
+  .reset(nodeRenameModalClosed)
+
+export const $renameTarget = createStore<{
+  nodeId: string
+  type: ProjectNodeType
+  title: string
+  pageId?: string | null
+} | null>(null)
+  .on(nodeRenameClicked, (_, payload) => payload)
+  .reset(nodeRenameModalClosed)
+
+export const $createTemplateId = restore(createTemplateIdChanged, null as string | null)
+  .reset(createExperimentModalClosed)
+
 export const $statusFilter = restore(statusFilterChanged, 'all' as ExperimentStatus | 'all')
+  .on(workspaceFiltersApplied, (_, filters) => filters.status)
+
+export const $tagFilter = restore(tagFilterChanged, null as string | null)
+  .on(workspaceFiltersApplied, (_, filters) => filters.tag)
+
 export const $searchQuery = restore(searchQueryChanged, '')
+  .on(workspaceFiltersApplied, (_, filters) => filters.search)
+
+export const $workspaceFiltersQuery = combine(
+  $statusFilter,
+  $tagFilter,
+  $searchQuery,
+  (status, tag, search) => workspaceFiltersToQuery({ status, tag, search }),
+)
 
 export const $canEdit = projectQuery.$data.map(p => p != null && p.role !== 'viewer')
 export const $canManage = projectQuery.$data.map(p => p?.role === 'owner')
@@ -140,12 +194,103 @@ const debouncedSearch = debounce({
   timeout: 400,
 })
 
+const projectRouteOpened = merge([
+  routes.projectView.opened,
+  routes.projectPageView.opened,
+  routes.experimentView.opened,
+  routes.projectSettings.opened,
+])
+
+sample({
+  clock: projectRouteOpened,
+  fn: payload => parseWorkspaceFiltersFromQuery(payload.query),
+  target: workspaceFiltersApplied,
+})
+
+sample({
+  clock: controls.locationUpdated,
+  filter: ({ pathname }) => pathname.includes('/projects/'),
+  fn: ({ query }) => parseWorkspaceFiltersFromQuery(query),
+  target: workspaceFiltersApplied,
+})
+
+sample({
+  clock: statusFilterChanged,
+  source: combine({
+    tag: $tagFilter,
+    search: $searchQuery,
+    path: router.$path,
+  }),
+  filter: ({ path }) => path.includes('/projects/'),
+  fn: ({ tag, search, path }, status) => ({
+    path,
+    query: workspaceFiltersToQuery({ status, tag, search }),
+    replace: true,
+  }),
+  target: router.navigate,
+})
+
+sample({
+  clock: tagFilterChanged,
+  source: combine({
+    status: $statusFilter,
+    search: $searchQuery,
+    path: router.$path,
+  }),
+  filter: ({ path }) => path.includes('/projects/'),
+  fn: ({ status, search, path }, tag) => ({
+    path,
+    query: workspaceFiltersToQuery({ status, tag, search }),
+    replace: true,
+  }),
+  target: router.navigate,
+})
+
+sample({
+  clock: debouncedSearch,
+  source: combine({
+    status: $statusFilter,
+    tag: $tagFilter,
+    path: router.$path,
+  }),
+  filter: ({ path }) => path.includes('/projects/'),
+  fn: ({ status, tag, path }, search) => ({
+    path,
+    query: workspaceFiltersToQuery({ status, tag, search }),
+    replace: true,
+  }),
+  target: router.navigate,
+})
+
+sample({
+  clock: workspaceFiltersApplied,
+  source: $projectId,
+  filter: (projectId, filters) => Boolean(projectId && filters.search.trim()),
+  fn: (projectId, filters) => ({ projectId: projectId!, q: filters.search.trim() }),
+  target: workspaceSearchQuery.start,
+})
+
 export const createExperimentForm = createForm({
   schema: {
     title: '',
-    objective: '',
   },
-  validation: zodAdapter(createExperimentSchema.pick({ title: true, objective: true })),
+  validation: zodAdapter(createExperimentSchema.pick({ title: true })),
+})
+
+sample({
+  clock: newExperimentClicked,
+  source: $projectId,
+  filter: Boolean,
+  fn: projectId => ({ projectId: projectId! }),
+  target: createExperimentTemplatesLoadRequested,
+})
+
+sample({
+  clock: projectExperimentTemplatesQuery.finished.success,
+  source: $createExperimentModalOpened,
+  filter: opened => opened,
+  fn: (_, { result }) => result[0]?.id ?? null,
+  target: createTemplateIdChanged,
 })
 
 sample({
@@ -175,6 +320,7 @@ sample({
     deleteWorkspaceNodeMutation.finished.success,
     deleteExperimentMutation.finished.success,
     moveWorkspaceNodeMutation.finished.success,
+    patchWorkspaceNodeMutation.finished.success,
   ],
   source: $projectId,
   filter: Boolean,
@@ -216,25 +362,30 @@ sample({
 
 sample({
   clock: createPageMutation.finished.success,
-  fn: ({ result, params }) => ({
+  source: $workspaceFiltersQuery,
+  fn: (query, { result, params }) => ({
     params: {
       projectId: params.projectId,
       pageId: result.id,
     },
-    query: {},
+    query,
   }),
   target: routes.projectPageView.open,
 })
 
 sample({
   clock: createExperimentForm.validatedAndSubmitted,
-  source: { projectId: $projectId, parentNodeId: $createParentNodeId },
+  source: {
+    projectId: $projectId,
+    parentNodeId: $createParentNodeId,
+    templateId: $createTemplateId,
+  },
   filter: ({ projectId }) => Boolean(projectId),
-  fn: ({ projectId, parentNodeId }, values) => ({
+  fn: ({ projectId, parentNodeId, templateId }, values) => ({
     projectId: projectId!,
     title: values.title,
-    objective: values.objective,
     status: 'draft' as const,
+    ...(templateId ? { templateId } : {}),
     ...(parentNodeId ? { parentNodeId } : {}),
   }),
   target: createExperimentMutation.start,
@@ -247,16 +398,22 @@ sample({
 
 sample({
   clock: createExperimentMutation.finished.success,
-  source: $projectId,
-  filter: Boolean,
-  fn: (projectId, { result }) => ({
+  source: combine({ projectId: $projectId, query: $workspaceFiltersQuery }),
+  filter: ({ projectId }) => Boolean(projectId),
+  fn: ({ projectId, query }, { result }) => ({
     params: {
       projectId: projectId!,
       experimentId: result.id,
     },
-    query: {},
+    query,
   }),
   target: routes.experimentView.open,
+})
+
+sample({
+  clock: copyUserExperimentTemplateToProjectMutation.finished.success,
+  fn: ({ result }) => result.id,
+  target: createTemplateIdChanged,
 })
 
 sample({
@@ -291,17 +448,46 @@ sample({
 })
 
 sample({
+  clock: nodeRenameConfirmed,
+  source: $renameTarget,
+  filter: Boolean,
+  fn: (target, title) => ({
+    id: target!.nodeId,
+    title,
+  }),
+  target: patchWorkspaceNodeMutation.start,
+})
+
+sample({
+  clock: patchWorkspaceNodeMutation.finished.success,
+  source: {
+    pageParams: routes.projectPageView.$params,
+    target: $renameTarget,
+  },
+  filter: ({ pageParams, target }) =>
+    Boolean(target?.type === 'page' && target.pageId && target.pageId === pageParams.pageId),
+  fn: ({ pageParams }) => ({ id: pageParams.pageId }),
+  target: projectPageQuery.start,
+})
+
+sample({
+  clock: patchWorkspaceNodeMutation.finished.success,
+  target: nodeRenameModalClosed,
+})
+
+sample({
   clock: deleteWorkspaceNodeMutation.finished.success,
   source: {
     pageParams: routes.projectPageView.$params,
     target: $lastDeleteTarget,
     projectId: $projectId,
+    query: $workspaceFiltersQuery,
   },
   filter: ({ pageParams, target }) =>
     Boolean(target?.pageId && target.pageId === pageParams.pageId),
-  fn: ({ projectId }) => ({
+  fn: ({ projectId, query }) => ({
     params: { id: projectId! },
-    query: {},
+    query,
   }),
   target: routes.projectView.open,
 })
@@ -312,12 +498,13 @@ sample({
     experimentParams: routes.experimentView.$params,
     target: $lastDeleteTarget,
     projectId: $projectId,
+    query: $workspaceFiltersQuery,
   },
   filter: ({ experimentParams, target }) =>
     Boolean(target?.experimentId && target.experimentId === experimentParams.experimentId),
-  fn: ({ projectId }) => ({
+  fn: ({ projectId, query }) => ({
     params: { id: projectId! },
-    query: {},
+    query,
   }),
   target: routes.projectView.open,
 })
@@ -326,11 +513,12 @@ reset({
   clock: projectRouteClosed,
   target: [
     $createExperimentModalOpened,
-    $statusFilter,
-    $searchQuery,
     $createParentNodeId,
+    $createTemplateId,
     $moveModalOpened,
     $moveTarget,
+    $renameModalOpened,
+    $renameTarget,
     $lastDeleteTarget,
   ],
 })

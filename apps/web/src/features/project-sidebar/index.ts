@@ -1,6 +1,10 @@
 import './model'
 
+export { CreateExperimentModal } from './create-experiment-modal'
+export { MobileNavCloseProvider } from './mobile-nav-provider'
 export * from './model'
 export { ProjectSidebarTree } from './project-sidebar-tree'
+export { useMobileNavClose } from './use-mobile-nav-close'
 export { ProjectSidebar } from './view'
 export { WorkspaceMoveModal } from './workspace-move-modal'
+export { WorkspaceRenameModal } from './workspace-rename-modal'

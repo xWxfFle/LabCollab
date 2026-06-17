@@ -1,4 +1,4 @@
-import type { WorkspaceNodeDto } from '@labcollab/shared'
+import type { ExperimentStatus, WorkspaceNodeDto } from '@labcollab/shared'
 import { useLink, useRouter } from '@argon-router/react'
 import {
   ActionIcon,
@@ -8,6 +8,7 @@ import {
   NavLink,
   ScrollArea,
   SegmentedControl,
+  Select,
   Stack,
   Text,
   TextInput,
@@ -15,19 +16,26 @@ import {
 } from '@mantine/core'
 import { IconFileText, IconFlask, IconSettings } from '@tabler/icons-react'
 import { useUnit } from 'effector-react'
+import { useMemo } from 'react'
 import { projectQuery, workspaceQuery, workspaceSearchQuery } from '@/shared/api'
+import { experimentStatusFilterOptions } from '@/shared/lib'
 import { routes } from '@/shared/routing'
+import { collectExperimentTags } from './lib'
 import {
   $canEdit,
   $searchQuery,
   $statusFilter,
+  $tagFilter,
+  $workspaceFiltersQuery,
   newExperimentClicked,
   newFolderClicked,
   newPageClicked,
   searchQueryChanged,
   statusFilterChanged,
+  tagFilterChanged,
 } from './model'
 import { ProjectSidebarTree } from './project-sidebar-tree'
+import { useMobileNavClose } from './use-mobile-nav-close'
 import { treeIconProps, workspaceTreeNavLinkProps } from './workspace-tree-icons'
 import { WorkspaceTreeNavLink } from './workspace-tree-nav-link'
 
@@ -44,17 +52,20 @@ export function ProjectSidebar({
   activeExperimentId,
   settingsActive = false,
 }: ProjectSidebarProps) {
-  const [project, tree, searchResults, searchQuery, statusFilter, canEdit] = useUnit([
+  const [project, tree, searchResults, searchQuery, statusFilter, tagFilter, canEdit, workspaceFiltersQuery] = useUnit([
     projectQuery.$data,
     workspaceQuery.$data,
     workspaceSearchQuery.$data,
     $searchQuery,
     $statusFilter,
+    $tagFilter,
     $canEdit,
+    $workspaceFiltersQuery,
   ])
 
   const onSearchChange = useUnit(searchQueryChanged)
   const onStatusChange = useUnit(statusFilterChanged)
+  const onTagFilterChange = useUnit(tagFilterChanged)
   const onNewFolder = useUnit(newFolderClicked)
   const onNewPage = useUnit(newPageClicked)
   const onNewExperiment = useUnit(newExperimentClicked)
@@ -64,9 +75,14 @@ export function ProjectSidebar({
     tab: 'general',
   })
   const { onNavigate } = useRouter()
+  const closeMobileNav = useMobileNavClose()
 
   const isSearchActive = searchQuery.trim().length > 0
   const nodes = (tree ?? []) as WorkspaceNodeDto[]
+  const tagOptions = useMemo(
+    () => collectExperimentTags((tree ?? []) as WorkspaceNodeDto[]),
+    [tree],
+  )
 
   return (
     <Stack gap="sm" h="100%">
@@ -105,13 +121,22 @@ export function ProjectSidebar({
           fullWidth
           value={statusFilter}
           onChange={value =>
-            onStatusChange(value as 'all' | 'draft' | 'in_progress' | 'completed')}
-          data={[
-            { value: 'all', label: 'Все' },
-            { value: 'draft', label: 'Черн.' },
-            { value: 'in_progress', label: 'В раб.' },
-            { value: 'completed', label: 'Готово' },
-          ]}
+            onStatusChange(value as ExperimentStatus | 'all')}
+          data={experimentStatusFilterOptions}
+        />
+      </Box>
+
+      <Box px="xs">
+        <Select
+          size="xs"
+          placeholder="Фильтр по тегу"
+          clearable
+          searchable
+          disabled={tagOptions.length === 0}
+          value={tagFilter}
+          onChange={value => onTagFilterChange(value)}
+          data={tagOptions}
+          nothingFoundMessage="Нет тегов"
         />
       </Box>
 
@@ -179,16 +204,19 @@ export function ProjectSidebar({
           color="violet"
           onClick={(event) => {
             if (
-              event.defaultPrevented
+              settingsActive
+              || event.defaultPrevented
               || event.metaKey
               || event.altKey
               || event.ctrlKey
               || event.shiftKey
             ) {
+              event.preventDefault()
               return
             }
             event.preventDefault()
-            onNavigate({ path: settingsPath, query: {} })
+            onNavigate({ path: settingsPath, query: workspaceFiltersQuery })
+            closeMobileNav?.()
           }}
         />
       </Box>

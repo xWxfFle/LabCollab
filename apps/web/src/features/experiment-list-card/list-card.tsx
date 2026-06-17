@@ -2,15 +2,6 @@ import type { ExperimentDto } from '@labcollab/shared'
 import { Badge, Box, Group, Paper, SimpleGrid, Stack, Text } from '@mantine/core'
 import { experimentStatusMeta } from '@/shared/lib'
 
-const textFields: { key: keyof ExperimentDto, label: string }[] = [
-  { key: 'objective', label: 'Цель' },
-  { key: 'hypothesis', label: 'Гипотеза' },
-  { key: 'materials', label: 'Материалы' },
-  { key: 'protocolSteps', label: 'Протокол' },
-  { key: 'conditions', label: 'Условия' },
-  { key: 'results', label: 'Результаты' },
-]
-
 const maxFieldLines = 4
 
 function formatDateTime(iso: string) {
@@ -31,15 +22,14 @@ function fieldPreview(value: string | null | undefined, max = 120) {
 }
 
 function filledTextFields(experiment: ExperimentDto) {
-  return textFields.flatMap(({ key, label }) => {
-    const value = experiment[key]
-    if (typeof value !== 'string')
-      return []
-    const preview = fieldPreview(value, 100)
-    if (!preview)
-      return []
-    return [{ label, preview }]
-  })
+  return [...experiment.fieldDefinitions]
+    .sort((a, b) => a.order - b.order)
+    .flatMap((field) => {
+      const preview = fieldPreview(experiment.fieldValues[field.id], 100)
+      if (!preview)
+        return []
+      return [{ label: field.label, preview }]
+    })
 }
 
 interface ExperimentListCardProps {

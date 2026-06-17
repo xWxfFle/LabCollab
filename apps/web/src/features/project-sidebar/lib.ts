@@ -1,22 +1,31 @@
 import type { ExperimentStatus, WorkspaceNodeDto } from '@labcollab/shared'
 
+function matchesTagFilter(tags: string[] | null | undefined, tagFilter: string) {
+  const needle = tagFilter.trim().toLowerCase()
+  if (!needle)
+    return true
+  return (tags ?? []).some(tag => tag.toLowerCase() === needle)
+}
+
 export function filterWorkspaceTree(
   nodes: WorkspaceNodeDto[],
   statusFilter: ExperimentStatus | 'all',
+  tagFilter: string | null,
 ): WorkspaceNodeDto[] {
   const result: WorkspaceNodeDto[] = []
 
   for (const node of nodes) {
     if (node.type === 'folder') {
-      const children = filterWorkspaceTree(node.children, statusFilter)
+      const children = filterWorkspaceTree(node.children, statusFilter, tagFilter)
       result.push({ ...node, children })
       continue
     }
 
     if (node.type === 'experiment') {
-      if (statusFilter !== 'all' && node.experimentStatus !== statusFilter) {
+      if (statusFilter !== 'all' && node.experimentStatus !== statusFilter)
         continue
-      }
+      if (!matchesTagFilter(node.experimentTags, tagFilter ?? ''))
+        continue
       result.push({ ...node, children: [] })
       continue
     }
@@ -25,6 +34,24 @@ export function filterWorkspaceTree(
   }
 
   return result
+}
+
+export function collectExperimentTags(nodes: WorkspaceNodeDto[]): string[] {
+  const tags = new Set<string>()
+
+  const walk = (list: WorkspaceNodeDto[]) => {
+    for (const node of list) {
+      if (node.type === 'experiment') {
+        for (const tag of node.experimentTags ?? [])
+          tags.add(tag)
+      }
+      if (node.children.length > 0)
+        walk(node.children)
+    }
+  }
+
+  walk(nodes)
+  return [...tags].sort((a, b) => a.localeCompare(b, 'ru'))
 }
 
 export function collectCollapsedKey(projectId: string) {

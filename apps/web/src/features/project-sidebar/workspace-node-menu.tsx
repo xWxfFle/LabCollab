@@ -7,6 +7,7 @@ interface WorkspaceNodeMenuProps {
   onCreateFolder: () => void
   onCreatePage: () => void
   onCreateExperiment: () => void
+  onRename?: () => void
   onMove?: () => void
   onDelete: () => void
 }
@@ -16,6 +17,7 @@ export function WorkspaceNodeMenu({
   onCreateFolder,
   onCreatePage,
   onCreateExperiment,
+  onRename,
   onMove,
   onDelete,
 }: WorkspaceNodeMenuProps) {
@@ -27,6 +29,7 @@ export function WorkspaceNodeMenu({
           size="sm"
           aria-label="Действия"
           onClick={e => e.stopPropagation()}
+          onMouseDown={e => e.stopPropagation()}
         >
           <IconDotsVertical size={14} stroke={1.5} />
         </ActionIcon>
@@ -39,6 +42,9 @@ export function WorkspaceNodeMenu({
             <Menu.Item onClick={onCreateExperiment}>Создать эксперимент</Menu.Item>
             <Menu.Divider />
           </>
+        )}
+        {onRename && (nodeType === 'folder' || nodeType === 'page') && (
+          <Menu.Item onClick={onRename}>Переименовать…</Menu.Item>
         )}
         {onMove && <Menu.Item onClick={onMove}>Переместить…</Menu.Item>}
         <Menu.Item color="red" onClick={onDelete}>

@@ -5,5 +5,16 @@ export function confirmAction(message: string): boolean {
   return window.confirm(message)
 }
 
-export { experimentStatusLabels, experimentStatusMeta } from './experiment-status'
+export {
+  experimentStatusFilterOptions,
+  experimentStatusLabels,
+  experimentStatusMeta,
+  experimentStatusShortLabels,
+} from './experiment-status'
+export { stripHtml } from './html'
 export { projectRoleLabels, projectRoleMeta } from './project-role'
+export {
+  experimentVersionPreview,
+  formatVersionDate,
+  type VersionHistoryItem,
+} from './version-history'
