@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, unlink } from 'node:fs/promises'
 import { join } from 'node:path'
 import { eq } from 'drizzle-orm'
 import { Elysia, t } from 'elysia'
@@ -10,7 +10,22 @@ import { authGuard } from '../../plugins/auth-guard'
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? join(process.cwd(), 'data', 'uploads')
 const MAX_SIZE = 10 * 1024 * 1024
-const ALLOWED = new Set(['image/jpeg', 'image/png', 'application/pdf', 'text/csv'])
+const ALLOWED_MIME = new Set([
+  'image/jpeg',
+  'image/png',
+  'application/pdf',
+  'text/csv',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+])
+const ALLOWED_EXT = new Set(['jpg', 'jpeg', 'png', 'pdf', 'csv', 'xlsx'])
+
+function isAllowedAttachment(file: File) {
+  if (ALLOWED_MIME.has(file.type))
+    return true
+
+  const ext = file.name.split('.').pop()?.toLowerCase()
+  return ext ? ALLOWED_EXT.has(ext) : false
+}
 
 export const attachmentsModule = new Elysia()
   .use(authGuard)
@@ -49,7 +64,7 @@ export const attachmentsModule = new Elysia()
         return { error: 'File too large or missing' }
       }
 
-      if (!ALLOWED.has(file.type)) {
+      if (!isAllowedAttachment(file)) {
         set.status = 400
         return { error: 'Unsupported file type' }
       }
@@ -111,4 +126,27 @@ export const attachmentsModule = new Elysia()
         'Content-Disposition': `attachment; filename="${row.filename}"`,
       },
     })
+  })
+  .delete('/attachments/:id', async ({ userId, params, set }) => {
+    const [row] = await db
+      .select()
+      .from(attachments)
+      .where(eq(attachments.id, params.id))
+      .limit(1)
+
+    if (!row || !(await canEditExperiment(userId, row.experimentId))) {
+      set.status = 404
+      return { error: 'Not found' }
+    }
+
+    try {
+      await unlink(row.storagePath)
+    }
+    catch {
+      // файл мог быть удалён вручную
+    }
+
+    await db.delete(attachments).where(eq(attachments.id, params.id))
+
+    return { ok: true as const }
   })

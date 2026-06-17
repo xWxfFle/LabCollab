@@ -1,6 +1,7 @@
 import {
   createExperimentSchema,
   listExperimentsQuerySchema,
+  minimalExperimentFieldSeed,
   updateExperimentSchema,
 } from '@labcollab/shared'
 import { and, desc, eq } from 'drizzle-orm'
@@ -8,10 +9,15 @@ import { Elysia } from 'elysia'
 import { db } from '../../db'
 import { experiments, experimentVersions, users } from '../../db/schema'
 import {
+  assignFieldIds,
+  buildChecklistFromSeed,
+  buildFieldValues,
+} from '../../lib/experiment-fields'
+import {
   buildExperimentListConditions,
   experimentListOrder,
 } from '../../lib/experiment-list'
-import { experimentToSnapshot, toExperimentDto } from '../../lib/mappers'
+import { experimentToSnapshot, parseFieldDefinitions, toExperimentDto } from '../../lib/mappers'
 import {
   canEditExperiment,
   canEditProject,
@@ -24,6 +30,7 @@ import {
   syncExperimentNodeTitle,
 } from '../../lib/workspace'
 import { authGuard } from '../../plugins/auth-guard'
+import { getExperimentTemplateForCreate } from '../experiment-templates'
 
 async function loadExperimentDto(experimentId: string) {
   const [row] = await db
@@ -41,7 +48,7 @@ async function loadExperimentDto(experimentId: string) {
   return toExperimentDto(row.experiment, row.authorDisplayName)
 }
 
-async function createSnapshot(experimentId: string, userId: string, observationsText = '') {
+async function createSnapshot(experimentId: string, userId: string, observationsText?: string) {
   const [row] = await db
     .select()
     .from(experiments)
@@ -56,6 +63,41 @@ async function createSnapshot(experimentId: string, userId: string, observations
     createdBy: userId,
     snapshotJson: experimentToSnapshot(row, observationsText),
   })
+}
+
+async function resolveExperimentCreatePayload(
+  userId: string,
+  projectId: string,
+  data: { title: string, templateId?: string, status?: typeof experiments.$inferSelect.status },
+) {
+  if (data.templateId) {
+    const template = await getExperimentTemplateForCreate(data.templateId, projectId, userId)
+    if (!template)
+      return { error: 'Template not found' as const }
+
+    const fieldDefinitions = parseFieldDefinitions(template.fieldDefinitions)
+    const fieldValues = buildFieldValues(fieldDefinitions)
+    const checklist = buildChecklistFromSeed(
+      (template.defaultChecklist ?? []) as Array<{ text: string, order: number }>,
+    )
+
+    return {
+      templateId: template.id,
+      fieldDefinitions,
+      fieldValues,
+      checklist,
+      observationsYjsState: template.defaultObservations,
+    }
+  }
+
+  const fieldDefinitions = assignFieldIds(minimalExperimentFieldSeed)
+  return {
+    templateId: null,
+    fieldDefinitions,
+    fieldValues: buildFieldValues(fieldDefinitions),
+    checklist: [] as ReturnType<typeof buildChecklistFromSeed>,
+    observationsYjsState: null,
+  }
 }
 
 export const experimentsModule = new Elysia()
@@ -106,25 +148,30 @@ export const experimentsModule = new Elysia()
       return { error: parentCheck.error }
     }
 
+    const resolved = await resolveExperimentCreatePayload(userId, params.id, data)
+    if ('error' in resolved) {
+      set.status = 404
+      return { error: resolved.error }
+    }
+
     const [row] = await db
       .insert(experiments)
       .values({
         projectId: params.id,
         authorId: userId,
         title: data.title,
-        objective: data.objective,
+        templateId: resolved.templateId,
+        fieldDefinitions: resolved.fieldDefinitions,
+        fieldValues: resolved.fieldValues,
+        checklist: resolved.checklist,
+        observationsYjsState: resolved.observationsYjsState,
         status: data.status ?? 'draft',
-        hypothesis: data.hypothesis ?? null,
-        materials: data.materials ?? null,
-        protocolSteps: data.protocolSteps ?? null,
-        conditions: data.conditions ?? null,
-        results: data.results ?? null,
         tags: data.tags ?? [],
         conductedAt: data.conductedAt ? new Date(data.conductedAt) : null,
       })
       .returning()
 
-    await createSnapshot(row.id, userId)
+    await createSnapshot(row.id, userId, row.observationsYjsState ?? '')
 
     await createExperimentNode({
       projectId: params.id,
@@ -182,38 +229,29 @@ export const experimentsModule = new Elysia()
     }
 
     const data = parsed.data
-    const observationsText
-      = typeof body === 'object' && body && 'observationsText' in body
-        ? String((body as { observationsText?: string }).observationsText ?? '')
-        : undefined
 
     const [row] = await db
       .update(experiments)
       .set({
         ...(data.title !== undefined && { title: data.title }),
-        ...(data.objective !== undefined && { objective: data.objective }),
         ...(data.status !== undefined && { status: data.status }),
-        ...(data.hypothesis !== undefined && { hypothesis: data.hypothesis }),
-        ...(data.materials !== undefined && { materials: data.materials }),
-        ...(data.protocolSteps !== undefined && { protocolSteps: data.protocolSteps }),
-        ...(data.conditions !== undefined && { conditions: data.conditions }),
-        ...(data.results !== undefined && { results: data.results }),
+        ...(data.fieldValues !== undefined && { fieldValues: data.fieldValues }),
+        ...(data.checklist !== undefined && { checklist: data.checklist }),
+        ...(data.observationsText !== undefined && { observationsYjsState: data.observationsText }),
         ...(data.tags !== undefined && { tags: data.tags }),
         ...(data.conductedAt !== undefined && {
           conductedAt: data.conductedAt ? new Date(data.conductedAt) : null,
         }),
-        ...(observationsText !== undefined && { observationsYjsState: observationsText }),
         updatedAt: new Date(),
       })
       .where(eq(experiments.id, params.id))
       .returning()
 
-    if (observationsText !== undefined) {
-      await createSnapshot(row.id, userId, observationsText)
-    }
-    else {
-      await createSnapshot(row.id, userId, row.observationsYjsState ?? '')
-    }
+    await createSnapshot(
+      row.id,
+      userId,
+      data.observationsText ?? row.observationsYjsState ?? '',
+    )
 
     if (data.title !== undefined) {
       await syncExperimentNodeTitle(row.id, data.title)
@@ -228,15 +266,20 @@ export const experimentsModule = new Elysia()
     }
 
     const rows = await db
-      .select()
+      .select({
+        version: experimentVersions,
+        createdByDisplayName: users.displayName,
+      })
       .from(experimentVersions)
+      .innerJoin(users, eq(users.id, experimentVersions.createdBy))
       .where(eq(experimentVersions.experimentId, params.id))
       .orderBy(desc(experimentVersions.createdAt))
 
-    return rows.map(v => ({
+    return rows.map(({ version: v, createdByDisplayName }) => ({
       id: v.id,
       experimentId: v.experimentId,
       createdBy: v.createdBy,
+      createdByDisplayName,
       createdAt: v.createdAt.toISOString(),
       snapshot: v.snapshotJson as Record<string, unknown>,
     }))
@@ -248,8 +291,12 @@ export const experimentsModule = new Elysia()
     }
 
     const [row] = await db
-      .select()
+      .select({
+        version: experimentVersions,
+        createdByDisplayName: users.displayName,
+      })
       .from(experimentVersions)
+      .innerJoin(users, eq(users.id, experimentVersions.createdBy))
       .where(
         and(
           eq(experimentVersions.id, params.vid),
@@ -264,10 +311,11 @@ export const experimentsModule = new Elysia()
     }
 
     return {
-      id: row.id,
-      experimentId: row.experimentId,
-      createdBy: row.createdBy,
-      createdAt: row.createdAt.toISOString(),
-      snapshot: row.snapshotJson as Record<string, unknown>,
+      id: row.version.id,
+      experimentId: row.version.experimentId,
+      createdBy: row.version.createdBy,
+      createdByDisplayName: row.createdByDisplayName,
+      createdAt: row.version.createdAt.toISOString(),
+      snapshot: row.version.snapshotJson as Record<string, unknown>,
     }
   })

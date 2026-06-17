@@ -3,6 +3,7 @@ import { and, eq } from 'drizzle-orm'
 import { Elysia } from 'elysia'
 import { db } from '../../db'
 import { projectMembers, projects, users } from '../../db/schema'
+import { seedDefaultProjectExperimentTemplate } from '../../lib/experiment-template-seed'
 import { toProjectDto } from '../../lib/mappers'
 import { canManageProject, canReadProject, getProjectRole } from '../../lib/rbac'
 import { authGuard } from '../../plugins/auth-guard'
@@ -39,6 +40,8 @@ export const projectsModule = new Elysia({ prefix: '/projects' })
       userId,
       role: 'owner',
     })
+
+    await seedDefaultProjectExperimentTemplate(project.id)
 
     return toProjectDto(project, 'owner')
   })

@@ -6,6 +6,7 @@ import { experiments, projectNodes, projectPages } from '../db/schema'
 type NodeRow = typeof projectNodes.$inferSelect & {
   pageId: string | null
   experimentStatus: typeof experiments.$inferSelect.status | null
+  experimentTags: string[] | null
 }
 
 export async function loadProjectNodes(projectId: string): Promise<NodeRow[]> {
@@ -14,6 +15,7 @@ export async function loadProjectNodes(projectId: string): Promise<NodeRow[]> {
       node: projectNodes,
       pageId: projectPages.id,
       experimentStatus: experiments.status,
+      experimentTags: experiments.tags,
     })
     .from(projectNodes)
     .leftJoin(projectPages, eq(projectPages.nodeId, projectNodes.id))
@@ -21,10 +23,11 @@ export async function loadProjectNodes(projectId: string): Promise<NodeRow[]> {
     .where(eq(projectNodes.projectId, projectId))
     .orderBy(asc(projectNodes.sortOrder), asc(projectNodes.createdAt))
 
-  return rows.map(({ node, pageId, experimentStatus }) => ({
+  return rows.map(({ node, pageId, experimentStatus, experimentTags }) => ({
     ...node,
     pageId: pageId ?? null,
     experimentStatus: experimentStatus ?? null,
+    experimentTags: experimentTags ?? null,
   }))
 }
 
@@ -48,6 +51,7 @@ export function buildWorkspaceTree(rows: NodeRow[]): WorkspaceNodeDto[] {
     pageId: row.pageId,
     experimentId: row.experimentId,
     experimentStatus: row.experimentStatus,
+    experimentTags: row.nodeType === 'experiment' ? (row.experimentTags ?? []) : null,
     children: (byParent.get(row.id) ?? []).map(toDto),
   })
 

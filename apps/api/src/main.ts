@@ -4,6 +4,7 @@ import { Elysia } from 'elysia'
 import { attachmentsModule } from './modules/attachments'
 import { authModule } from './modules/auth'
 import { commentsModule } from './modules/comments'
+import { experimentTemplatesModule } from './modules/experiment-templates'
 import { experimentsModule } from './modules/experiments'
 import { exportModule } from './modules/export'
 import { projectsModule } from './modules/projects'
@@ -25,6 +26,7 @@ const app = new Elysia()
   }))
   .use(authModule)
   .use(projectsModule)
+  .use(experimentTemplatesModule)
   .use(experimentsModule)
   .use(attachmentsModule)
   .use(commentsModule)

@@ -9,7 +9,7 @@ import {
 import { and, desc, eq } from 'drizzle-orm'
 import { Elysia } from 'elysia'
 import { db } from '../../db'
-import { projectNodes, projectPages, projectPageVersions } from '../../db/schema'
+import { projectNodes, projectPages, projectPageVersions, users } from '../../db/schema'
 import { pageToSnapshot, toProjectPageDto } from '../../lib/page-mappers'
 import { canEditProject, canReadProject } from '../../lib/rbac'
 import {
@@ -112,6 +112,7 @@ export const workspaceModule = new Elysia()
       pageId: null,
       experimentId: null,
       experimentStatus: null,
+      experimentTags: null,
       children: [],
     }
   })
@@ -345,15 +346,20 @@ export const workspaceModule = new Elysia()
     }
 
     const rows = await db
-      .select()
+      .select({
+        version: projectPageVersions,
+        createdByDisplayName: users.displayName,
+      })
       .from(projectPageVersions)
+      .innerJoin(users, eq(users.id, projectPageVersions.createdBy))
       .where(eq(projectPageVersions.pageId, params.id))
       .orderBy(desc(projectPageVersions.createdAt))
 
-    return rows.map(v => ({
+    return rows.map(({ version: v, createdByDisplayName }) => ({
       id: v.id,
       pageId: v.pageId,
       createdBy: v.createdBy,
+      createdByDisplayName,
       createdAt: v.createdAt.toISOString(),
       snapshot: v.snapshotJson as Record<string, unknown>,
     }))
@@ -371,8 +377,12 @@ export const workspaceModule = new Elysia()
     }
 
     const [row] = await db
-      .select()
+      .select({
+        version: projectPageVersions,
+        createdByDisplayName: users.displayName,
+      })
       .from(projectPageVersions)
+      .innerJoin(users, eq(users.id, projectPageVersions.createdBy))
       .where(
         and(
           eq(projectPageVersions.id, params.vid),
@@ -387,10 +397,11 @@ export const workspaceModule = new Elysia()
     }
 
     return {
-      id: row.id,
-      pageId: row.pageId,
-      createdBy: row.createdBy,
-      createdAt: row.createdAt.toISOString(),
-      snapshot: row.snapshotJson as Record<string, unknown>,
+      id: row.version.id,
+      pageId: row.version.pageId,
+      createdBy: row.version.createdBy,
+      createdByDisplayName: row.createdByDisplayName,
+      createdAt: row.version.createdAt.toISOString(),
+      snapshot: row.version.snapshotJson as Record<string, unknown>,
     }
   })

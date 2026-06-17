@@ -15,8 +15,10 @@ export const projectRoleEnum = pgEnum('project_role', ['owner', 'editor', 'viewe
 export const experimentStatusEnum = pgEnum('experiment_status', [
   'draft',
   'in_progress',
-  'completed',
+  'completed_success',
+  'completed_failure',
 ])
+export const experimentTemplateScopeEnum = pgEnum('experiment_template_scope', ['user', 'project'])
 export const projectNodeTypeEnum = pgEnum('project_node_type', ['folder', 'page', 'experiment'])
 
 export const users = pgTable('users', {
@@ -51,6 +53,19 @@ export const projectMembers = pgTable(
   t => [primaryKey({ columns: [t.projectId, t.userId] })],
 )
 
+export const experimentTemplates = pgTable('experiment_templates', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  scope: experimentTemplateScopeEnum('scope').notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+  fieldDefinitions: jsonb('field_definitions').notNull(),
+  defaultObservations: text('default_observations'),
+  defaultChecklist: jsonb('default_checklist').notNull().default([]),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
 export const experiments = pgTable('experiments', {
   id: uuid('id').defaultRandom().primaryKey(),
   projectId: uuid('project_id')
@@ -59,14 +74,14 @@ export const experiments = pgTable('experiments', {
   authorId: uuid('author_id')
     .notNull()
     .references(() => users.id),
+  templateId: uuid('template_id').references(() => experimentTemplates.id, {
+    onDelete: 'set null',
+  }),
   title: text('title').notNull(),
   status: experimentStatusEnum('status').notNull().default('draft'),
-  hypothesis: text('hypothesis'),
-  objective: text('objective').notNull(),
-  materials: text('materials'),
-  protocolSteps: text('protocol_steps'),
-  conditions: text('conditions'),
-  results: text('results'),
+  fieldDefinitions: jsonb('field_definitions').notNull().default([]),
+  fieldValues: jsonb('field_values').notNull().default({}),
+  checklist: jsonb('checklist').notNull().default([]),
   observationsYjsState: text('observations_yjs_state'),
   tags: text('tags').array().notNull().default([]),
   conductedAt: timestamp('conducted_at', { withTimezone: true }),
@@ -174,6 +189,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   owner: one(users, { fields: [projects.ownerId], references: [users.id] }),
   members: many(projectMembers),
   experiments: many(experiments),
+  experimentTemplates: many(experimentTemplates),
   nodes: many(projectNodes),
   pages: many(projectPages),
 }))

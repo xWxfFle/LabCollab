@@ -1,14 +1,21 @@
 import { eq } from 'drizzle-orm'
 import { db } from './db'
-import { projectMembers, projects, users } from './db/schema'
+import { users } from './db/schema'
 import { hashPassword } from './lib/auth-utils'
+import {
+  clearDemoSeed,
+  clearLegacyDemoSeed,
+  isDemoSeedApplied,
+  runDemoSeed,
+} from './lib/seed-demo-data'
 
-async function seed() {
-  const demoUsers = [
-    { email: 'alice@lab.local', password: 'password123', displayName: 'Алиса Исследователь' },
-    { email: 'bob@lab.local', password: 'password123', displayName: 'Боб Коллега' },
-  ]
+const demoUsers = [
+  { email: 'alice@lab.local', password: 'password123', displayName: 'Алиса Исследователь' },
+  { email: 'bob@lab.local', password: 'password123', displayName: 'Боб Коллега' },
+  { email: 'carol@lab.local', password: 'password123', displayName: 'Каролина Наблюдатель' },
+] as const
 
+async function upsertDemoUsers() {
   const userIds: string[] = []
 
   for (const u of demoUsers) {
@@ -29,28 +36,46 @@ async function seed() {
     }
   }
 
-  if (userIds.length < 2) {
-    console.log('Seed: users already exist or failed')
+  if (userIds.length < demoUsers.length)
+    throw new Error('Seed: failed to resolve demo users')
+
+  return {
+    aliceId: userIds[0],
+    bobId: userIds[1],
+    carolId: userIds[2],
+  }
+}
+
+async function seed() {
+  const ids = await upsertDemoUsers()
+
+  const force = process.env.SEED_FORCE === '1'
+  if (force) {
+    console.log('Seed: SEED_FORCE=1 — удаляем предыдущие demo-проекты')
+    await clearDemoSeed()
+  }
+
+  if (!force && await isDemoSeedApplied()) {
+    console.log('Seed: demo-данные уже есть (demo-seed-v2), пропуск', ids)
     return
   }
 
-  const [aliceId, bobId] = userIds
+  await clearLegacyDemoSeed(ids.aliceId)
 
-  const [project] = await db
-    .insert(projects)
-    .values({
-      name: 'НИР: катализаторы',
-      description: 'Демо-проект для SHWare',
-      ownerId: aliceId,
-    })
-    .returning()
+  const { projectIds } = await runDemoSeed(ids)
 
-  await db.insert(projectMembers).values([
-    { projectId: project.id, userId: aliceId, role: 'owner' },
-    { projectId: project.id, userId: bobId, role: 'editor' },
-  ])
-
-  console.log('Seed complete:', { projectId: project.id, aliceId, bobId })
+  console.log('Seed complete:', {
+    ...ids,
+    projectIds,
+    projects: [
+      'НИР: катализаторы',
+      'Спектроскопия полимеров',
+      'Электрохимия наночастиц',
+    ],
+    logins: demoUsers.map(u => u.email),
+    password: 'password123',
+    hint: 'Пересоздать: SEED_FORCE=1 bun run db:seed',
+  })
 }
 
 seed()
