@@ -1,20 +1,21 @@
-import { z } from 'zod';
-import { experimentStatusSchema, projectNodeTypeSchema } from '@labcollab/shared';
+import { experimentStatusSchema, projectNodeTypeSchema } from '@labcollab/shared'
+import { z } from 'zod'
+
 export const userDtoSchema = z.object({
   id: z.string(),
   email: z.string(),
   displayName: z.string(),
   createdAt: z.string(),
-});
+})
 
 export const authResponseSchema = z.object({
   accessToken: z.string(),
   user: userDtoSchema,
-});
+})
 
 export const meResponseSchema = z.object({
   user: userDtoSchema,
-});
+})
 
 export const projectDtoSchema = z.object({
   id: z.string(),
@@ -23,7 +24,7 @@ export const projectDtoSchema = z.object({
   ownerId: z.string(),
   role: z.enum(['owner', 'editor', 'viewer']),
   createdAt: z.string(),
-});
+})
 
 export const experimentDtoSchema = z.object({
   id: z.string(),
@@ -43,7 +44,7 @@ export const experimentDtoSchema = z.object({
   conductedAt: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
-});
+})
 
 export const attachmentDtoSchema = z.object({
   id: z.string(),
@@ -53,7 +54,7 @@ export const attachmentDtoSchema = z.object({
   size: z.number(),
   uploadedBy: z.string(),
   createdAt: z.string(),
-});
+})
 
 export const versionDtoSchema = z.object({
   id: z.string(),
@@ -61,12 +62,23 @@ export const versionDtoSchema = z.object({
   createdBy: z.string(),
   createdAt: z.string(),
   snapshot: z.record(z.string(), z.unknown()),
-});
+})
 
-export const projectsListSchema = z.array(projectDtoSchema);
-export const experimentsListSchema = z.array(experimentDtoSchema);
-export const attachmentsListSchema = z.array(attachmentDtoSchema);
-export const versionsListSchema = z.array(versionDtoSchema);
+export const projectsListSchema = z.array(projectDtoSchema)
+
+export const projectMemberDtoSchema = z.object({
+  userId: z.string(),
+  email: z.string(),
+  displayName: z.string(),
+  role: z.enum(['owner', 'editor', 'viewer']),
+})
+
+export const projectMembersListSchema = z.array(projectMemberDtoSchema)
+
+export const deleteOkSchema = z.object({ ok: z.literal(true) })
+export const experimentsListSchema = z.array(experimentDtoSchema)
+export const attachmentsListSchema = z.array(attachmentDtoSchema)
+export const versionsListSchema = z.array(versionDtoSchema)
 
 export const commentDtoSchema = z.object({
   id: z.string(),
@@ -76,21 +88,21 @@ export const commentDtoSchema = z.object({
   body: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
-});
+})
 
-export const commentsListSchema = z.array(commentDtoSchema);
+export const commentsListSchema = z.array(commentDtoSchema)
 
 export const workspaceNodeDtoSchema: z.ZodType<{
-  id: string;
-  projectId: string;
-  parentId: string | null;
-  type: z.infer<typeof projectNodeTypeSchema>;
-  title: string;
-  sortOrder: number;
-  pageId: string | null;
-  experimentId: string | null;
-  experimentStatus: z.infer<typeof experimentStatusSchema> | null;
-  children: unknown[];
+  id: string
+  projectId: string
+  parentId: string | null
+  type: z.infer<typeof projectNodeTypeSchema>
+  title: string
+  sortOrder: number
+  pageId: string | null
+  experimentId: string | null
+  experimentStatus: z.infer<typeof experimentStatusSchema> | null
+  children: unknown[]
 }> = z.lazy(() =>
   z.object({
     id: z.string(),
@@ -104,9 +116,9 @@ export const workspaceNodeDtoSchema: z.ZodType<{
     experimentStatus: experimentStatusSchema.nullable(),
     children: z.array(workspaceNodeDtoSchema),
   }),
-);
+)
 
-export const workspaceTreeSchema = z.array(workspaceNodeDtoSchema);
+export const workspaceTreeSchema = z.array(workspaceNodeDtoSchema)
 
 export const projectPageDtoSchema = z.object({
   id: z.string(),
@@ -117,7 +129,7 @@ export const projectPageDtoSchema = z.object({
   authorId: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
-});
+})
 
 export const pageVersionsListSchema = z.array(
   z.object({
@@ -130,7 +142,7 @@ export const pageVersionsListSchema = z.array(
       bodyHtml: z.string(),
     }),
   }),
-);
+)
 
 export const workspaceSearchResultSchema = z.object({
   pages: z.array(
@@ -147,4 +159,4 @@ export const workspaceSearchResultSchema = z.object({
       title: z.string(),
     }),
   ),
-});
+})
