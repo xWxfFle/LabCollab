@@ -1,6 +1,6 @@
-import type { ProjectPageVersionDto } from '@labcollab/shared';
-import { createEvent, createStore, sample } from 'effector';
-import { debounce, reset } from 'patronum';
+import type { ProjectPageVersionDto } from '@labcollab/shared'
+import { createEvent, createStore, restore, sample } from 'effector'
+import { debounce, reset } from 'patronum'
 import {
   downloadPageMdFx,
   downloadPagePdfFx,
@@ -9,52 +9,51 @@ import {
   projectPageQuery,
   projectQuery,
   savePageExportFx,
-} from '@/shared/api';
-import { debouncedRouteOpened, routes } from '@/shared/routing';
-import { chainAuthenticated } from '@/shared/viewer';
+} from '@/shared/api'
+import { debouncedRouteOpened, routes } from '@/shared/routing'
+import { chainAuthenticated } from '@/shared/viewer'
 
-export const currentRoute = routes.projectPageView;
-export const authenticatedRoute = chainAuthenticated(currentRoute);
-export const routeOpened = debouncedRouteOpened(currentRoute);
+export const currentRoute = routes.projectPageView
+export const authenticatedRoute = chainAuthenticated(currentRoute)
+export const routeOpened = debouncedRouteOpened(currentRoute)
 
-export const titleChanged = createEvent<string>();
-export const bodyChanged = createEvent<string>();
-export const exportPdfClicked = createEvent();
-export const exportMdClicked = createEvent();
-export const versionSelected = createEvent<ProjectPageVersionDto>();
-export const versionModalClosed = createEvent();
+export const titleChanged = createEvent<string>()
+export const bodyChanged = createEvent<string>()
+export const exportPdfClicked = createEvent()
+export const exportMdClicked = createEvent()
+export const versionSelected = createEvent<ProjectPageVersionDto>()
+export const versionModalClosed = createEvent()
 
-export const $title = createStore('');
-export const $bodyHtml = createStore('');
+export const $title = createStore('')
+export const $bodyHtml = createStore('')
 
-export const $canEdit = projectQuery.$data.map((p) => p != null && p.role !== 'viewer');
-export const $isSaving = patchPageMutation.$pending;
+export const $canEdit = projectQuery.$data.map(p => p != null && p.role !== 'viewer')
+export const $isSaving = patchPageMutation.$pending
 
 export const $versionModalOpened = createStore(false)
   .on(versionSelected, () => true)
-  .on(versionModalClosed, () => false);
+  .reset(versionModalClosed)
 
-export const $selectedVersion = createStore<ProjectPageVersionDto | null>(null)
-  .on(versionSelected, (_, version) => version)
-  .reset(versionModalClosed);
+export const $selectedVersion = restore(versionSelected, null as ProjectPageVersionDto | null)
+  .reset(versionModalClosed)
 
 sample({
   clock: routeOpened,
   fn: ({ params }) => ({ id: params.pageId }),
   target: projectPageQuery.start,
-});
+})
 
 sample({
   clock: routeOpened,
   fn: ({ params }) => ({ id: params.projectId }),
   target: projectQuery.start,
-});
+})
 
 sample({
   clock: routeOpened,
   fn: ({ params }) => ({ pageId: params.pageId }),
   target: pageVersionsQuery.start,
-});
+})
 
 sample({
   clock: patchPageMutation.finished.success,
@@ -62,24 +61,24 @@ sample({
   filter: ({ pageId }) => Boolean(pageId),
   fn: ({ pageId }) => ({ pageId }),
   target: pageVersionsQuery.start,
-});
+})
 
 sample({
   clock: projectPageQuery.$data,
   filter: Boolean,
-  fn: (page) => page!.title,
+  fn: page => page!.title,
   target: $title,
-});
+})
 
 sample({
   clock: projectPageQuery.$data,
   filter: Boolean,
-  fn: (page) => page!.bodyHtml,
+  fn: page => page!.bodyHtml,
   target: $bodyHtml,
-});
+})
 
-const titleDebounced = debounce({ source: titleChanged, timeout: 1500 });
-const bodyDebounced = debounce({ source: bodyChanged, timeout: 1500 });
+const titleDebounced = debounce({ source: titleChanged, timeout: 1500 })
+const bodyDebounced = debounce({ source: bodyChanged, timeout: 1500 })
 
 sample({
   clock: titleDebounced,
@@ -87,7 +86,7 @@ sample({
   filter: ({ params }) => Boolean(params.pageId),
   fn: ({ params, title }) => ({ id: params.pageId, title }),
   target: patchPageMutation.start,
-});
+})
 
 sample({
   clock: bodyDebounced,
@@ -95,17 +94,17 @@ sample({
   filter: ({ params }) => Boolean(params.pageId),
   fn: ({ params, bodyHtml }) => ({ id: params.pageId, bodyHtml }),
   target: patchPageMutation.start,
-});
+})
 
 sample({
   clock: titleChanged,
   target: $title,
-});
+})
 
 sample({
   clock: bodyChanged,
   target: $bodyHtml,
-});
+})
 
 sample({
   clock: exportPdfClicked,
@@ -113,7 +112,7 @@ sample({
   filter: ({ pageId }) => Boolean(pageId),
   fn: ({ pageId }) => ({ pageId }),
   target: downloadPagePdfFx,
-});
+})
 
 sample({
   clock: exportMdClicked,
@@ -121,7 +120,7 @@ sample({
   filter: ({ pageId }) => Boolean(pageId),
   fn: ({ pageId }) => ({ pageId }),
   target: downloadPageMdFx,
-});
+})
 
 sample({
   clock: downloadPagePdfFx.done,
@@ -131,7 +130,7 @@ sample({
     extension: 'pdf' as const,
   }),
   target: savePageExportFx,
-});
+})
 
 sample({
   clock: downloadPageMdFx.done,
@@ -141,9 +140,9 @@ sample({
     extension: 'md' as const,
   }),
   target: savePageExportFx,
-});
+})
 
 reset({
   clock: currentRoute.closed,
   target: [$title, $bodyHtml, $selectedVersion, $versionModalOpened],
-});
+})

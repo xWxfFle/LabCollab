@@ -1,14 +1,14 @@
-import type { Route } from '@argon-router/core';
-import { useLink, useRouter } from '@argon-router/react';
-import type { TextProps } from '@mantine/core';
-import { Text } from '@mantine/core';
-import type { MouseEvent } from 'react';
+import type { Route } from '@argon-router/core'
+import type { TextProps } from '@mantine/core'
+import type { MouseEvent } from 'react'
+import { useLink, useRouter } from '@argon-router/react'
+import { Text } from '@mantine/core'
 
 type RouteTextLinkProps<Params extends object | void = void> = {
-  to: Route<Params>;
-  params?: Params extends void | undefined ? never : Params;
-  children: React.ReactNode;
-} & TextProps;
+  to: Route<Params>
+  params?: Params extends void | undefined ? never : Params
+  children: React.ReactNode
+} & TextProps
 
 /** Текстовая ссылка с навигацией argon-router. */
 export function RouteTextLink<Params extends object | void = void>({
@@ -17,8 +17,8 @@ export function RouteTextLink<Params extends object | void = void>({
   children,
   ...textProps
 }: RouteTextLinkProps<Params>) {
-  const { path } = useLink(to, params as never);
-  const { onNavigate } = useRouter();
+  const { path } = useLink(to, params as never)
+  const { onNavigate } = useRouter()
 
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (
@@ -28,11 +28,11 @@ export function RouteTextLink<Params extends object | void = void>({
       || event.ctrlKey
       || event.shiftKey
     ) {
-      return;
+      return
     }
-    event.preventDefault();
-    onNavigate({ path, query: {} });
-  };
+    event.preventDefault()
+    onNavigate({ path, query: {} })
+  }
 
   return (
     <Text
@@ -44,5 +44,5 @@ export function RouteTextLink<Params extends object | void = void>({
     >
       {children}
     </Text>
-  );
+  )
 }

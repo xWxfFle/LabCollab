@@ -1,5 +1,5 @@
-export { debouncedRouteOpened } from './dedupe-route-opened';
-export { RouteLink } from './route-link';
-export { RouteTextLink } from './route-text-link';
-export { controls, router } from './router';
-export { routes } from './routes';
+export { debouncedRouteOpened } from './dedupe-route-opened'
+export { RouteLink } from './route-link'
+export { RouteTextLink } from './route-text-link'
+export { controls, router } from './router'
+export { routes } from './routes'

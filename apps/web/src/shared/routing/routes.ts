@@ -1,4 +1,4 @@
-import { createRoute } from '@argon-router/core';
+import { createRoute } from '@argon-router/core'
 
 export const routes = {
   login: createRoute({ path: '/login' }),
@@ -11,4 +11,7 @@ export const routes = {
   experimentView: createRoute({
     path: '/projects/:projectId/experiments/:experimentId',
   }),
-};
+  projectSettings: createRoute({
+    path: '/projects/:projectId/settings/:tab',
+  }),
+}
