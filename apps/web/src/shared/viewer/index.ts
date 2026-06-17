@@ -1,4 +1,4 @@
-export { chainAnonymous, chainAuthenticated } from './chains';
+export { chainAnonymous, chainAuthenticated } from './chains'
 export {
   $token,
   $viewer,
@@ -8,5 +8,5 @@ export {
   viewerAuthenticated,
   viewerQuery,
   viewerSignedOut,
-} from './model';
-export type { ViewerStatus } from './model';
+} from './model'
+export type { ViewerStatus } from './model'

@@ -1,21 +1,23 @@
-import { allSettled, fork } from 'effector';
-import { Provider } from 'effector-react';
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import { App } from './app/app';
-import { appStarted } from './shared/init';
-import './styles.css';
+import { allSettled, fork } from 'effector'
+import { Provider } from 'effector-react'
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import { App } from './app/app'
+import { appStarted } from './shared/init'
+import './app/fonts'
+import './shared/api/http-client'
+import './styles.css'
 
-const root = document.getElementById('root');
+const root = document.getElementById('root')
 
 if (!root) {
-  throw new Error('Root element #root not found');
+  throw new Error('Root element #root not found')
 }
 
 async function render() {
-  const scope = fork();
+  const scope = fork()
 
-  await allSettled(appStarted, { scope });
+  await allSettled(appStarted, { scope })
 
   createRoot(root!).render(
     <StrictMode>
@@ -23,7 +25,7 @@ async function render() {
         <App />
       </Provider>
     </StrictMode>,
-  );
+  )
 }
 
-render().catch(() => console.error('Failed to render the app'));
+render().catch(() => console.error('Failed to render the app'))
