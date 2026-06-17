@@ -4,6 +4,7 @@ import { DangerSettingsTab } from './danger-settings-tab'
 import { GeneralSettingsTab } from './general-settings-tab'
 import { MembersSettingsTab } from './members-settings-tab'
 import { SettingsNav } from './settings-nav'
+import { TemplatesSettingsTab } from './templates-settings-tab'
 
 interface ProjectSettingsPanelProps {
   projectId: string
@@ -16,6 +17,8 @@ function SettingsTabContent({ tab }: { tab: ProjectSettingsTab }) {
       return <GeneralSettingsTab />
     case 'members':
       return <MembersSettingsTab />
+    case 'templates':
+      return <TemplatesSettingsTab />
     case 'danger':
       return <DangerSettingsTab />
   }

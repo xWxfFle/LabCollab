@@ -1,6 +1,11 @@
 import { createEffect } from 'effector'
 import { apiFetch } from './base'
 
+export interface PendingAttachmentDraft {
+  localId: string
+  file: File
+}
+
 export const uploadAttachmentFx = createEffect(
   async ({ experimentId, file }: { experimentId: string, file: File }) => {
     const form = new FormData()
@@ -10,6 +15,42 @@ export const uploadAttachmentFx = createEffect(
       body: form,
     })
     return res.json()
+  },
+)
+
+export const deleteAttachmentFx = createEffect(
+  async (attachmentId: string) => {
+    const res = await apiFetch(`/attachments/${attachmentId}`, {
+      method: 'DELETE',
+    })
+    return res.json()
+  },
+)
+
+export const syncExperimentAttachmentsFx = createEffect(
+  async ({
+    experimentId,
+    uploads,
+    deletes,
+  }: {
+    experimentId: string
+    uploads: PendingAttachmentDraft[]
+    deletes: string[]
+  }) => {
+    for (const attachmentId of deletes) {
+      const res = await apiFetch(`/attachments/${attachmentId}`, { method: 'DELETE' })
+      await res.json()
+    }
+
+    for (const { file } of uploads) {
+      const form = new FormData()
+      form.append('file', file)
+      const res = await apiFetch(`/experiments/${experimentId}/attachments`, {
+        method: 'POST',
+        body: form,
+      })
+      await res.json()
+    }
   },
 )
 

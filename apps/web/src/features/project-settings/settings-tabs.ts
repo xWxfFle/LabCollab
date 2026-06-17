@@ -1,10 +1,11 @@
-export const PROJECT_SETTINGS_TABS = ['general', 'members', 'danger'] as const
+export const PROJECT_SETTINGS_TABS = ['general', 'members', 'templates', 'danger'] as const
 
 export type ProjectSettingsTab = typeof PROJECT_SETTINGS_TABS[number]
 
 export const settingsTabLabels: Record<ProjectSettingsTab, string> = {
   general: 'Общее',
   members: 'Участники',
+  templates: 'Шаблоны',
   danger: 'Опасная зона',
 }
 

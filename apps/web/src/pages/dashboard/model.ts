@@ -3,6 +3,7 @@ import { zodAdapter } from '@effector-reform/zod'
 import { createProjectSchema } from '@labcollab/shared'
 import { createEvent, createStore, sample } from 'effector'
 import { reset } from 'patronum'
+import { templatesLoadRequested } from '@/features/experiment-template-editor/model'
 import { createProjectMutation, projectsQuery } from '@/shared/api'
 import { debouncedRouteOpened, routes } from '@/shared/routing'
 import { chainAuthenticated } from '@/shared/viewer'
@@ -29,6 +30,12 @@ export const createFormModel = createForm({
 sample({
   clock: routeOpened,
   target: projectsQuery.start,
+})
+
+sample({
+  clock: routeOpened,
+  fn: () => ({ scope: 'user' as const }),
+  target: templatesLoadRequested,
 })
 
 sample({

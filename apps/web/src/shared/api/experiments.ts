@@ -15,7 +15,7 @@ import {
 } from './contracts'
 
 type CreateExperimentParams = { projectId: string } & CreateExperimentInput
-type PatchExperimentParams = { id: string } & UpdateExperimentInput & { observationsText?: string }
+type PatchExperimentParams = { id: string } & UpdateExperimentInput
 
 interface ListExperimentsParams {
   projectId: string
@@ -63,14 +63,9 @@ export const createExperimentMutation = createJsonMutation({
     url: params => `/api/projects/${params.projectId}/experiments`,
     body: params => ({
       title: params.title,
-      objective: params.objective,
       parentNodeId: params.parentNodeId,
+      templateId: params.templateId,
       status: params.status,
-      hypothesis: params.hypothesis,
-      materials: params.materials,
-      protocolSteps: params.protocolSteps,
-      conditions: params.conditions,
-      results: params.results,
       tags: params.tags,
       conductedAt: params.conductedAt,
     }),

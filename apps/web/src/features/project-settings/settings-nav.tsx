@@ -3,17 +3,19 @@ import { useLink, useRouter } from '@argon-router/react'
 import { Box, NavLink, Stack, Text, Title } from '@mantine/core'
 import {
   IconAlertTriangle,
+  IconFileDescription,
   IconSettings,
   IconUsers,
 } from '@tabler/icons-react'
 import { useUnit } from 'effector-react'
-import { $canManage } from '@/features/project-sidebar/model'
+import { $canManage, $workspaceFiltersQuery } from '@/features/project-sidebar/model'
 import { routes } from '@/shared/routing'
 import { settingsTabLabels } from './settings-tabs'
 
 const tabIcons: Record<ProjectSettingsTab, typeof IconSettings> = {
   general: IconSettings,
   members: IconUsers,
+  templates: IconFileDescription,
   danger: IconAlertTriangle,
 }
 
@@ -33,6 +35,7 @@ function SettingsNavItem({
 }) {
   const { path } = useLink(routes.projectSettings, { projectId, tab })
   const { onNavigate } = useRouter()
+  const workspaceQuery = useUnit($workspaceFiltersQuery)
   const Icon = tabIcons[tab]
 
   return (
@@ -59,7 +62,7 @@ function SettingsNavItem({
           return
         }
         event.preventDefault()
-        onNavigate({ path, query: {} })
+        onNavigate({ path, query: workspaceQuery })
       }}
     />
   )
@@ -69,8 +72,8 @@ export function SettingsNav({ projectId, activeTab }: SettingsNavProps) {
   const canManage = useUnit($canManage)
 
   const tabs: ProjectSettingsTab[] = canManage
-    ? ['general', 'members', 'danger']
-    : ['general', 'members']
+    ? ['general', 'members', 'templates', 'danger']
+    : ['general', 'members', 'templates']
 
   return (
     <Box w={220} style={{ flexShrink: 0 }}>

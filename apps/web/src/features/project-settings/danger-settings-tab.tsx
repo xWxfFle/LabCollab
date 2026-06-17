@@ -1,41 +1,92 @@
-import { Button, Stack, Text, Title } from '@mantine/core'
+import { Button, Group, Modal, Stack, Text, TextInput, Title } from '@mantine/core'
 import { useUnit } from 'effector-react'
-import { deleteProjectMutation } from '@/shared/api'
-import { confirmAction } from '@/shared/lib'
+import { useState } from 'react'
+import { deleteProjectMutation, projectQuery } from '@/shared/api'
 import { deleteProjectConfirmed } from './model'
 
 export function DangerSettingsTab() {
-  const [deletePending, confirmDelete] = useUnit([
+  const [deletePending, project, confirmDelete] = useUnit([
     deleteProjectMutation.$pending,
+    projectQuery.$data,
     deleteProjectConfirmed,
   ])
 
+  const [modalOpened, setModalOpened] = useState(false)
+  const [confirmName, setConfirmName] = useState('')
+
+  const projectName = project?.name ?? ''
+  const nameMatches = confirmName.trim() === projectName
+
+  const closeModal = () => {
+    setModalOpened(false)
+    setConfirmName('')
+  }
+
   const handleDeleteProject = () => {
-    if (!confirmAction(
-      'Удалить проект и все его данные? Это действие нельзя отменить.',
-    )) {
+    if (!nameMatches || deletePending)
       return
-    }
     confirmDelete()
   }
 
   return (
-    <Stack gap="md" maw={560}>
-      <Title order={3} c="red">
-        Опасная зона
-      </Title>
-      <Text size="sm" c="dimmed">
-        Проект, страницы, эксперименты и вложения будут удалены безвозвратно.
-      </Text>
-      <Button
-        color="red"
-        variant="light"
-        w="fit-content"
-        loading={deletePending}
-        onClick={handleDeleteProject}
+    <>
+      <Stack gap="md" maw={560}>
+        <Title order={3} c="red">
+          Опасная зона
+        </Title>
+        <Text size="sm" c="dimmed">
+          Проект, страницы, эксперименты и вложения будут удалены безвозвратно.
+        </Text>
+        <Button
+          color="red"
+          variant="light"
+          w="fit-content"
+          onClick={() => setModalOpened(true)}
+        >
+          Удалить проект
+        </Button>
+      </Stack>
+
+      <Modal
+        opened={modalOpened}
+        onClose={closeModal}
+        title="Удалить проект?"
+        centered
       >
-        Удалить проект
-      </Button>
-    </Stack>
+        <Stack gap="md">
+          <Text size="sm">
+            Будут удалены все страницы, эксперименты, вложения и шаблоны проекта
+            {' '}
+            <Text component="span" fw={600}>
+              «
+              {projectName}
+              »
+            </Text>
+            . Это действие нельзя отменить.
+          </Text>
+          <TextInput
+            label="Введите название проекта для подтверждения"
+            placeholder={projectName}
+            value={confirmName}
+            onChange={e => setConfirmName(e.currentTarget.value)}
+            autoComplete="off"
+            data-autofocus
+          />
+          <Group justify="flex-end">
+            <Button variant="default" onClick={closeModal}>
+              Отмена
+            </Button>
+            <Button
+              color="red"
+              loading={deletePending}
+              disabled={!nameMatches}
+              onClick={handleDeleteProject}
+            >
+              Удалить проект
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+    </>
   )
 }

@@ -33,15 +33,54 @@ export const experimentDtoSchema = z.object({
   authorDisplayName: z.string().nullable(),
   title: z.string(),
   status: experimentStatusSchema,
-  hypothesis: z.string().nullable(),
-  objective: z.string(),
-  materials: z.string().nullable(),
-  protocolSteps: z.string().nullable(),
-  conditions: z.string().nullable(),
-  results: z.string().nullable(),
+  templateId: z.string().nullable(),
+  fieldDefinitions: z.array(
+    z.object({
+      id: z.string(),
+      label: z.string(),
+      required: z.boolean(),
+      order: z.number(),
+      defaultValue: z.string().optional(),
+    }),
+  ),
+  fieldValues: z.record(z.string(), z.string()),
+  checklist: z.array(
+    z.object({
+      id: z.string(),
+      text: z.string(),
+      done: z.boolean(),
+      order: z.number(),
+    }),
+  ),
   observationsText: z.string().nullable(),
   tags: z.array(z.string()),
   conductedAt: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
+
+export const experimentTemplateDtoSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  scope: z.enum(['user', 'project']),
+  userId: z.string().nullable(),
+  projectId: z.string().nullable(),
+  fieldDefinitions: z.array(
+    z.object({
+      id: z.string(),
+      label: z.string(),
+      required: z.boolean(),
+      order: z.number(),
+      defaultValue: z.string().optional(),
+    }),
+  ),
+  defaultObservations: z.string().nullable(),
+  defaultChecklist: z.array(
+    z.object({
+      text: z.string(),
+      order: z.number(),
+    }),
+  ),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -60,6 +99,7 @@ export const versionDtoSchema = z.object({
   id: z.string(),
   experimentId: z.string(),
   createdBy: z.string(),
+  createdByDisplayName: z.string(),
   createdAt: z.string(),
   snapshot: z.record(z.string(), z.unknown()),
 })
@@ -77,6 +117,7 @@ export const projectMembersListSchema = z.array(projectMemberDtoSchema)
 
 export const deleteOkSchema = z.object({ ok: z.literal(true) })
 export const experimentsListSchema = z.array(experimentDtoSchema)
+export const experimentTemplatesListSchema = z.array(experimentTemplateDtoSchema)
 export const attachmentsListSchema = z.array(attachmentDtoSchema)
 export const versionsListSchema = z.array(versionDtoSchema)
 
@@ -102,6 +143,7 @@ export const workspaceNodeDtoSchema: z.ZodType<{
   pageId: string | null
   experimentId: string | null
   experimentStatus: z.infer<typeof experimentStatusSchema> | null
+  experimentTags: string[] | null
   children: unknown[]
 }> = z.lazy(() =>
   z.object({
@@ -114,6 +156,7 @@ export const workspaceNodeDtoSchema: z.ZodType<{
     pageId: z.string().nullable(),
     experimentId: z.string().nullable(),
     experimentStatus: experimentStatusSchema.nullable(),
+    experimentTags: z.array(z.string()).nullable(),
     children: z.array(workspaceNodeDtoSchema),
   }),
 )
@@ -136,6 +179,7 @@ export const pageVersionsListSchema = z.array(
     id: z.string(),
     pageId: z.string(),
     createdBy: z.string(),
+    createdByDisplayName: z.string(),
     createdAt: z.string(),
     snapshot: z.object({
       title: z.string(),
