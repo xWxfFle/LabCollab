@@ -1,5 +1,6 @@
-import { useForm } from '@effector-reform/react'
+import type { AuthTab } from './model'
 import { useLink, useRouter } from '@argon-router/react'
+import { useForm } from '@effector-reform/react'
 import {
   Alert,
   Button,
@@ -10,7 +11,6 @@ import {
 import { useUnit } from 'effector-react'
 import { routes } from '@/shared/routing'
 import { AuthFormTabs, AuthPageLayout } from '@/shared/ui/auth'
-import type { AuthTab } from './model'
 import {
   $authTab,
   authTabChanged,
@@ -102,8 +102,8 @@ function RegisterForm() {
 export default function LoginPage() {
   const authTab = useUnit($authTab)
   const changeAuthTab = useUnit(authTabChanged)
-  const loginLink = useLink(routes.login)
-  const registerLink = useLink(routes.register)
+  const loginLink = useLink(routes.login, undefined as never)
+  const registerLink = useLink(routes.register, undefined as never)
   const { onNavigate } = useRouter()
 
   const handleTabChange = (tab: AuthTab) => {

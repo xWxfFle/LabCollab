@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
-import { Box, Paper, SimpleGrid } from '@mantine/core'
+import { Box, Paper, SimpleGrid, Stack } from '@mantine/core'
 import { AuthIntroPanel } from './auth-intro-panel'
 
-type AuthPageLayoutProps = {
+interface AuthPageLayoutProps {
   children: ReactNode
 }
 
@@ -30,14 +30,15 @@ export function AuthPageLayout({ children }: AuthPageLayoutProps) {
         style={{ overflow: 'hidden' }}
       >
         <SimpleGrid cols={{ base: 1, md: 2 }} spacing={0}>
-          <Box
+          <Stack
             p={{ base: 'lg', md: 'xl' }}
+            gap={0}
             styles={{
               root: {
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                minHeight: '100%',
+                'display': 'flex',
+                'flexDirection': 'column',
+                'justifyContent': 'center',
+                'minHeight': '100%',
                 '@media (max-width: 47.99em)': {
                   justifyContent: 'flex-start',
                 },
@@ -45,13 +46,14 @@ export function AuthPageLayout({ children }: AuthPageLayoutProps) {
             }}
           >
             {children}
-          </Box>
-          <Box
+          </Stack>
+          <Paper
             p={{ base: 'lg', md: 'xl' }}
             bg="var(--mantine-color-violet-0)"
+            radius={0}
             styles={{
               root: {
-                borderTop: '1px solid var(--mantine-color-default-border)',
+                'borderTop': '1px solid var(--mantine-color-default-border)',
                 '@media (min-width: 48em)': {
                   borderTop: 'none',
                   borderLeft: '1px solid var(--mantine-color-default-border)',
@@ -60,7 +62,7 @@ export function AuthPageLayout({ children }: AuthPageLayoutProps) {
             }}
           >
             <AuthIntroPanel />
-          </Box>
+          </Paper>
         </SimpleGrid>
       </Paper>
     </Box>

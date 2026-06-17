@@ -3,7 +3,7 @@ import { Tabs } from '@mantine/core'
 
 export type AuthFormTab = 'login' | 'register'
 
-type AuthFormTabsProps = {
+interface AuthFormTabsProps {
   value: AuthFormTab
   onChange: (value: AuthFormTab) => void
   loginPanel: ReactNode
