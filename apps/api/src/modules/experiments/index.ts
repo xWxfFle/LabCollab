@@ -1,29 +1,29 @@
-import { and, desc, eq } from 'drizzle-orm';
-import { Elysia } from 'elysia';
-import { db } from '../../db';
-import { experimentVersions, experiments, users } from '../../db/schema';
 import {
   createExperimentSchema,
   listExperimentsQuerySchema,
   updateExperimentSchema,
-} from '@labcollab/shared';
-import { experimentToSnapshot, toExperimentDto } from '../../lib/mappers';
+} from '@labcollab/shared'
+import { and, desc, eq } from 'drizzle-orm'
+import { Elysia } from 'elysia'
+import { db } from '../../db'
+import { experiments, experimentVersions, users } from '../../db/schema'
 import {
   buildExperimentListConditions,
   experimentListOrder,
-} from '../../lib/experiment-list';
-import {
-  assertFolderParent,
-  createExperimentNode,
-  syncExperimentNodeTitle,
-} from '../../lib/workspace';
+} from '../../lib/experiment-list'
+import { experimentToSnapshot, toExperimentDto } from '../../lib/mappers'
 import {
   canEditExperiment,
   canEditProject,
   canReadExperiment,
   canReadProject,
-} from '../../lib/rbac';
-import { authGuard } from '../../plugins/auth-guard';
+} from '../../lib/rbac'
+import {
+  assertFolderParent,
+  createExperimentNode,
+  syncExperimentNodeTitle,
+} from '../../lib/workspace'
+import { authGuard } from '../../plugins/auth-guard'
 
 async function loadExperimentDto(experimentId: string) {
   const [row] = await db
@@ -34,10 +34,11 @@ async function loadExperimentDto(experimentId: string) {
     .from(experiments)
     .innerJoin(users, eq(users.id, experiments.authorId))
     .where(eq(experiments.id, experimentId))
-    .limit(1);
+    .limit(1)
 
-  if (!row) return null;
-  return toExperimentDto(row.experiment, row.authorDisplayName);
+  if (!row)
+    return null
+  return toExperimentDto(row.experiment, row.authorDisplayName)
 }
 
 async function createSnapshot(experimentId: string, userId: string, observationsText = '') {
@@ -45,29 +46,30 @@ async function createSnapshot(experimentId: string, userId: string, observations
     .select()
     .from(experiments)
     .where(eq(experiments.id, experimentId))
-    .limit(1);
+    .limit(1)
 
-  if (!row) return;
+  if (!row)
+    return
 
   await db.insert(experimentVersions).values({
     experimentId,
     createdBy: userId,
     snapshotJson: experimentToSnapshot(row, observationsText),
-  });
+  })
 }
 
 export const experimentsModule = new Elysia()
   .use(authGuard)
   .get('/projects/:id/experiments', async ({ userId, params, query, set }) => {
     if (!(await canReadProject(userId, params.id))) {
-      set.status = 404;
-      return { error: 'Not found' };
+      set.status = 404
+      return { error: 'Not found' }
     }
 
-    const parsed = listExperimentsQuerySchema.safeParse(query);
+    const parsed = listExperimentsQuerySchema.safeParse(query)
     if (!parsed.success) {
-      set.status = 422;
-      return { error: parsed.error.flatten() };
+      set.status = 422
+      return { error: parsed.error.flatten() }
     }
 
     const rows = await db
@@ -78,30 +80,30 @@ export const experimentsModule = new Elysia()
       .from(experiments)
       .innerJoin(users, eq(users.id, experiments.authorId))
       .where(buildExperimentListConditions(params.id, parsed.data))
-      .orderBy(experimentListOrder);
+      .orderBy(experimentListOrder)
 
     return rows.map(({ experiment, authorDisplayName }) =>
       toExperimentDto(experiment, authorDisplayName),
-    );
+    )
   })
   .post('/projects/:id/experiments', async ({ userId, params, body, set }) => {
     if (!(await canEditProject(userId, params.id))) {
-      set.status = 403;
-      return { error: 'Forbidden' };
+      set.status = 403
+      return { error: 'Forbidden' }
     }
 
-    const parsed = createExperimentSchema.safeParse(body);
+    const parsed = createExperimentSchema.safeParse(body)
     if (!parsed.success) {
-      set.status = 422;
-      return { error: parsed.error.flatten() };
+      set.status = 422
+      return { error: parsed.error.flatten() }
     }
 
-    const data = parsed.data;
+    const data = parsed.data
 
-    const parentCheck = await assertFolderParent(params.id, data.parentNodeId);
+    const parentCheck = await assertFolderParent(params.id, data.parentNodeId)
     if (!parentCheck.ok) {
-      set.status = parentCheck.status;
-      return { error: parentCheck.error };
+      set.status = parentCheck.status
+      return { error: parentCheck.error }
     }
 
     const [row] = await db
@@ -120,9 +122,9 @@ export const experimentsModule = new Elysia()
         tags: data.tags ?? [],
         conductedAt: data.conductedAt ? new Date(data.conductedAt) : null,
       })
-      .returning();
+      .returning()
 
-    await createSnapshot(row.id, userId);
+    await createSnapshot(row.id, userId)
 
     await createExperimentNode({
       projectId: params.id,
@@ -130,60 +132,60 @@ export const experimentsModule = new Elysia()
       title: row.title,
       authorId: userId,
       parentNodeId: data.parentNodeId,
-    });
+    })
 
-    return (await loadExperimentDto(row.id))!;
+    return (await loadExperimentDto(row.id))!
   })
   .delete('/experiments/:id', async ({ userId, params, set }) => {
     if (!(await canEditExperiment(userId, params.id))) {
-      set.status = 403;
-      return { error: 'Forbidden' };
+      set.status = 403
+      return { error: 'Forbidden' }
     }
 
     const [row] = await db
       .select({ id: experiments.id })
       .from(experiments)
       .where(eq(experiments.id, params.id))
-      .limit(1);
+      .limit(1)
 
     if (!row) {
-      set.status = 404;
-      return { error: 'Not found' };
+      set.status = 404
+      return { error: 'Not found' }
     }
 
-    await db.delete(experiments).where(eq(experiments.id, params.id));
-    return { ok: true };
+    await db.delete(experiments).where(eq(experiments.id, params.id))
+    return { ok: true }
   })
   .get('/experiments/:id', async ({ userId, params, set }) => {
     if (!(await canReadExperiment(userId, params.id))) {
-      set.status = 404;
-      return { error: 'Not found' };
+      set.status = 404
+      return { error: 'Not found' }
     }
 
-    const dto = await loadExperimentDto(params.id);
+    const dto = await loadExperimentDto(params.id)
     if (!dto) {
-      set.status = 404;
-      return { error: 'Not found' };
+      set.status = 404
+      return { error: 'Not found' }
     }
-    return dto;
+    return dto
   })
   .patch('/experiments/:id', async ({ userId, params, body, set }) => {
     if (!(await canEditExperiment(userId, params.id))) {
-      set.status = 403;
-      return { error: 'Forbidden' };
+      set.status = 403
+      return { error: 'Forbidden' }
     }
 
-    const parsed = updateExperimentSchema.safeParse(body);
+    const parsed = updateExperimentSchema.safeParse(body)
     if (!parsed.success) {
-      set.status = 422;
-      return { error: parsed.error.flatten() };
+      set.status = 422
+      return { error: parsed.error.flatten() }
     }
 
-    const data = parsed.data;
-    const observationsText =
-      typeof body === 'object' && body && 'observationsText' in body
+    const data = parsed.data
+    const observationsText
+      = typeof body === 'object' && body && 'observationsText' in body
         ? String((body as { observationsText?: string }).observationsText ?? '')
-        : undefined;
+        : undefined
 
     const [row] = await db
       .update(experiments)
@@ -204,44 +206,45 @@ export const experimentsModule = new Elysia()
         updatedAt: new Date(),
       })
       .where(eq(experiments.id, params.id))
-      .returning();
+      .returning()
 
     if (observationsText !== undefined) {
-      await createSnapshot(row.id, userId, observationsText);
-    } else {
-      await createSnapshot(row.id, userId, row.observationsYjsState ?? '');
+      await createSnapshot(row.id, userId, observationsText)
+    }
+    else {
+      await createSnapshot(row.id, userId, row.observationsYjsState ?? '')
     }
 
     if (data.title !== undefined) {
-      await syncExperimentNodeTitle(row.id, data.title);
+      await syncExperimentNodeTitle(row.id, data.title)
     }
 
-    return (await loadExperimentDto(row.id))!;
+    return (await loadExperimentDto(row.id))!
   })
   .get('/experiments/:id/versions', async ({ userId, params, set }) => {
     if (!(await canReadExperiment(userId, params.id))) {
-      set.status = 404;
-      return { error: 'Not found' };
+      set.status = 404
+      return { error: 'Not found' }
     }
 
     const rows = await db
       .select()
       .from(experimentVersions)
       .where(eq(experimentVersions.experimentId, params.id))
-      .orderBy(desc(experimentVersions.createdAt));
+      .orderBy(desc(experimentVersions.createdAt))
 
-    return rows.map((v) => ({
+    return rows.map(v => ({
       id: v.id,
       experimentId: v.experimentId,
       createdBy: v.createdBy,
       createdAt: v.createdAt.toISOString(),
       snapshot: v.snapshotJson as Record<string, unknown>,
-    }));
+    }))
   })
   .get('/experiments/:id/versions/:vid', async ({ userId, params, set }) => {
     if (!(await canReadExperiment(userId, params.id))) {
-      set.status = 404;
-      return { error: 'Not found' };
+      set.status = 404
+      return { error: 'Not found' }
     }
 
     const [row] = await db
@@ -253,11 +256,11 @@ export const experimentsModule = new Elysia()
           eq(experimentVersions.experimentId, params.id),
         ),
       )
-      .limit(1);
+      .limit(1)
 
     if (!row) {
-      set.status = 404;
-      return { error: 'Not found' };
+      set.status = 404
+      return { error: 'Not found' }
     }
 
     return {
@@ -266,5 +269,5 @@ export const experimentsModule = new Elysia()
       createdBy: row.createdBy,
       createdAt: row.createdAt.toISOString(),
       snapshot: row.snapshotJson as Record<string, unknown>,
-    };
-  });
+    }
+  })

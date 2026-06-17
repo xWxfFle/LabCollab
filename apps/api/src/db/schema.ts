@@ -1,4 +1,4 @@
-import { relations } from 'drizzle-orm';
+import { relations } from 'drizzle-orm'
 import {
   integer,
   jsonb,
@@ -9,15 +9,15 @@ import {
   timestamp,
   unique,
   uuid,
-} from 'drizzle-orm/pg-core';
+} from 'drizzle-orm/pg-core'
 
-export const projectRoleEnum = pgEnum('project_role', ['owner', 'editor', 'viewer']);
+export const projectRoleEnum = pgEnum('project_role', ['owner', 'editor', 'viewer'])
 export const experimentStatusEnum = pgEnum('experiment_status', [
   'draft',
   'in_progress',
   'completed',
-]);
-export const projectNodeTypeEnum = pgEnum('project_node_type', ['folder', 'page', 'experiment']);
+])
+export const projectNodeTypeEnum = pgEnum('project_node_type', ['folder', 'page', 'experiment'])
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -25,7 +25,7 @@ export const users = pgTable('users', {
   passwordHash: text('password_hash').notNull(),
   displayName: text('display_name').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+})
 
 export const projects = pgTable('projects', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -35,7 +35,7 @@ export const projects = pgTable('projects', {
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+})
 
 export const projectMembers = pgTable(
   'project_members',
@@ -48,8 +48,8 @@ export const projectMembers = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     role: projectRoleEnum('role').notNull(),
   },
-  (t) => [primaryKey({ columns: [t.projectId, t.userId] })],
-);
+  t => [primaryKey({ columns: [t.projectId, t.userId] })],
+)
 
 export const experiments = pgTable('experiments', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -72,7 +72,7 @@ export const experiments = pgTable('experiments', {
   conductedAt: timestamp('conducted_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-});
+})
 
 export const attachments = pgTable('attachments', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -87,7 +87,7 @@ export const attachments = pgTable('attachments', {
     .notNull()
     .references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+})
 
 export const experimentVersions = pgTable('experiment_versions', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -99,7 +99,7 @@ export const experimentVersions = pgTable('experiment_versions', {
     .notNull()
     .references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+})
 
 export const experimentComments = pgTable('experiment_comments', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -112,7 +112,7 @@ export const experimentComments = pgTable('experiment_comments', {
   body: text('body').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-});
+})
 
 export const projectNodes = pgTable(
   'project_nodes',
@@ -136,8 +136,8 @@ export const projectNodes = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [unique('project_nodes_experiment_id_unique').on(t.experimentId)],
-);
+  t => [unique('project_nodes_experiment_id_unique').on(t.experimentId)],
+)
 
 export const projectPages = pgTable('project_pages', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -151,7 +151,7 @@ export const projectPages = pgTable('project_pages', {
   bodyHtml: text('body_html').notNull().default(''),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-});
+})
 
 export const projectPageVersions = pgTable('project_page_versions', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -163,12 +163,12 @@ export const projectPageVersions = pgTable('project_page_versions', {
     .notNull()
     .references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+})
 
 export const usersRelations = relations(users, ({ many }) => ({
   projects: many(projects),
   memberships: many(projectMembers),
-}));
+}))
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
   owner: one(users, { fields: [projects.ownerId], references: [users.id] }),
@@ -176,7 +176,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   experiments: many(experiments),
   nodes: many(projectNodes),
   pages: many(projectPages),
-}));
+}))
 
 export const projectNodesRelations = relations(projectNodes, ({ one, many }) => ({
   project: one(projects, { fields: [projectNodes.projectId], references: [projects.id] }),
@@ -191,19 +191,19 @@ export const projectNodesRelations = relations(projectNodes, ({ one, many }) => 
     references: [experiments.id],
   }),
   page: one(projectPages, { fields: [projectNodes.id], references: [projectPages.nodeId] }),
-}));
+}))
 
 export const projectPagesRelations = relations(projectPages, ({ one, many }) => ({
   node: one(projectNodes, { fields: [projectPages.nodeId], references: [projectNodes.id] }),
   project: one(projects, { fields: [projectPages.projectId], references: [projects.id] }),
   versions: many(projectPageVersions),
-}));
+}))
 
 export const projectPageVersionsRelations = relations(projectPageVersions, ({ one }) => ({
   page: one(projectPages, { fields: [projectPageVersions.pageId], references: [projectPages.id] }),
-}));
+}))
 
 export const projectMembersRelations = relations(projectMembers, ({ one }) => ({
   project: one(projects, { fields: [projectMembers.projectId], references: [projects.id] }),
   user: one(users, { fields: [projectMembers.userId], references: [users.id] }),
-}));
+}))

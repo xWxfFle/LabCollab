@@ -1,9 +1,9 @@
-import type { ExperimentDto, ProjectDto } from '@labcollab/shared';
-import type { experiments, projects, projectMembers } from '../db/schema';
+import type { ExperimentDto, ProjectDto } from '@labcollab/shared'
+import type { experiments, projectMembers, projects } from '../db/schema'
 
-type ExperimentRow = typeof experiments.$inferSelect;
-type ProjectRow = typeof projects.$inferSelect;
-type ProjectRole = typeof projectMembers.$inferSelect.role;
+type ExperimentRow = typeof experiments.$inferSelect
+type ProjectRow = typeof projects.$inferSelect
+type ProjectRole = typeof projectMembers.$inferSelect.role
 
 export function toProjectDto(project: ProjectRow, role: ProjectRole): ProjectDto {
   return {
@@ -13,7 +13,7 @@ export function toProjectDto(project: ProjectRow, role: ProjectRole): ProjectDto
     ownerId: project.ownerId,
     role,
     createdAt: project.createdAt.toISOString(),
-  };
+  }
 }
 
 export function toExperimentDto(
@@ -38,12 +38,12 @@ export function toExperimentDto(
     conductedAt: row.conductedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
-  };
+  }
 }
 
 export function experimentToSnapshot(row: ExperimentRow, observationsText = '') {
   return {
     ...toExperimentDto(row),
     observationsText,
-  };
+  }
 }

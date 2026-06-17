@@ -1,19 +1,20 @@
-import { and, desc, eq, ilike, or, sql, type SQL } from 'drizzle-orm';
-import type { ListExperimentsQuery } from '@labcollab/shared';
-import { experiments } from '../db/schema';
+import type { ListExperimentsQuery } from '@labcollab/shared'
+import type { SQL } from 'drizzle-orm'
+import { and, desc, eq, ilike, or, sql } from 'drizzle-orm'
+import { experiments } from '../db/schema'
 
 export function buildExperimentListConditions(
   projectId: string,
   query: ListExperimentsQuery,
 ): SQL {
-  const conditions: SQL[] = [eq(experiments.projectId, projectId)];
+  const conditions: SQL[] = [eq(experiments.projectId, projectId)]
 
   if (query.status) {
-    conditions.push(eq(experiments.status, query.status));
+    conditions.push(eq(experiments.status, query.status))
   }
 
   if (query.q) {
-    const pattern = `%${query.q}%`;
+    const pattern = `%${query.q}%`
     conditions.push(
       or(
         ilike(experiments.title, pattern),
@@ -26,10 +27,10 @@ export function buildExperimentListConditions(
         ilike(experiments.observationsYjsState, pattern),
         sql`exists (select 1 from unnest(${experiments.tags}) as t(tag) where t.tag ilike ${pattern})`,
       )!,
-    );
+    )
   }
 
-  return and(...conditions)!;
+  return and(...conditions)!
 }
 
-export const experimentListOrder = desc(experiments.updatedAt);
+export const experimentListOrder = desc(experiments.updatedAt)

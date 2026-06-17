@@ -1,13 +1,13 @@
-import { and, eq, ilike, or, sql } from 'drizzle-orm';
-import type { WorkspaceSearchResultDto } from '@labcollab/shared';
-import { db } from '../db';
-import { experiments, projectNodes, projectPages } from '../db/schema';
+import type { WorkspaceSearchResultDto } from '@labcollab/shared'
+import { and, eq, ilike, or, sql } from 'drizzle-orm'
+import { db } from '../db'
+import { experiments, projectNodes, projectPages } from '../db/schema'
 
 export async function searchWorkspace(
   projectId: string,
   q: string,
 ): Promise<WorkspaceSearchResultDto> {
-  const pattern = `%${q}%`;
+  const pattern = `%${q}%`
 
   const pageRows = await db
     .select({
@@ -24,7 +24,7 @@ export async function searchWorkspace(
         or(ilike(projectNodes.title, pattern), ilike(projectPages.bodyHtml, pattern)),
       ),
     )
-    .limit(20);
+    .limit(20)
 
   const experimentRows = await db
     .select({
@@ -47,10 +47,10 @@ export async function searchWorkspace(
         ),
       ),
     )
-    .limit(20);
+    .limit(20)
 
   return {
     pages: pageRows,
     experiments: experimentRows,
-  };
+  }
 }

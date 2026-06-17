@@ -1,21 +1,21 @@
-import { asc, eq } from 'drizzle-orm';
-import { Elysia } from 'elysia';
-import { createCommentSchema } from '@labcollab/shared';
-import { db } from '../../db';
-import { experimentComments, users } from '../../db/schema';
+import { createCommentSchema } from '@labcollab/shared'
+import { asc, eq } from 'drizzle-orm'
+import { Elysia } from 'elysia'
+import { db } from '../../db'
+import { experimentComments, users } from '../../db/schema'
 import {
   canManageProject,
   canReadExperiment,
   getExperimentProjectId,
-} from '../../lib/rbac';
-import { authGuard } from '../../plugins/auth-guard';
+} from '../../lib/rbac'
+import { authGuard } from '../../plugins/auth-guard'
 
 export const commentsModule = new Elysia()
   .use(authGuard)
   .get('/experiments/:id/comments', async ({ userId, params, set }) => {
     if (!(await canReadExperiment(userId, params.id))) {
-      set.status = 404;
-      return { error: 'Not found' };
+      set.status = 404
+      return { error: 'Not found' }
     }
 
     const rows = await db
@@ -31,9 +31,9 @@ export const commentsModule = new Elysia()
       .from(experimentComments)
       .innerJoin(users, eq(users.id, experimentComments.authorId))
       .where(eq(experimentComments.experimentId, params.id))
-      .orderBy(asc(experimentComments.createdAt));
+      .orderBy(asc(experimentComments.createdAt))
 
-    return rows.map((row) => ({
+    return rows.map(row => ({
       id: row.id,
       experimentId: row.experimentId,
       authorId: row.authorId,
@@ -41,18 +41,18 @@ export const commentsModule = new Elysia()
       body: row.body,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
-    }));
+    }))
   })
   .post('/experiments/:id/comments', async ({ userId, params, body, set }) => {
     if (!(await canReadExperiment(userId, params.id))) {
-      set.status = 404;
-      return { error: 'Not found' };
+      set.status = 404
+      return { error: 'Not found' }
     }
 
-    const parsed = createCommentSchema.safeParse(body);
+    const parsed = createCommentSchema.safeParse(body)
     if (!parsed.success) {
-      set.status = 422;
-      return { error: parsed.error.flatten() };
+      set.status = 422
+      return { error: parsed.error.flatten() }
     }
 
     const [row] = await db
@@ -62,13 +62,13 @@ export const commentsModule = new Elysia()
         authorId: userId,
         body: parsed.data.body,
       })
-      .returning();
+      .returning()
 
     const [author] = await db
       .select({ displayName: users.displayName })
       .from(users)
       .where(eq(users.id, userId))
-      .limit(1);
+      .limit(1)
 
     return {
       id: row.id,
@@ -78,35 +78,35 @@ export const commentsModule = new Elysia()
       body: row.body,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
-    };
+    }
   })
   .delete('/comments/:id', async ({ userId, params, set }) => {
     const [comment] = await db
       .select()
       .from(experimentComments)
       .where(eq(experimentComments.id, params.id))
-      .limit(1);
+      .limit(1)
 
     if (!comment) {
-      set.status = 404;
-      return { error: 'Not found' };
+      set.status = 404
+      return { error: 'Not found' }
     }
 
-    const projectId = await getExperimentProjectId(comment.experimentId);
+    const projectId = await getExperimentProjectId(comment.experimentId)
     if (!projectId) {
-      set.status = 404;
-      return { error: 'Not found' };
+      set.status = 404
+      return { error: 'Not found' }
     }
 
-    const isAuthor = comment.authorId === userId;
-    const isOwner = await canManageProject(userId, projectId);
+    const isAuthor = comment.authorId === userId
+    const isOwner = await canManageProject(userId, projectId)
 
     if (!isAuthor && !isOwner) {
-      set.status = 403;
-      return { error: 'Forbidden' };
+      set.status = 403
+      return { error: 'Forbidden' }
     }
 
-    await db.delete(experimentComments).where(eq(experimentComments.id, params.id));
+    await db.delete(experimentComments).where(eq(experimentComments.id, params.id))
 
-    return { ok: true };
-  });
+    return { ok: true }
+  })

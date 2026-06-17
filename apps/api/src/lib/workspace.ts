@@ -1,12 +1,12 @@
-import { and, asc, eq, isNull } from 'drizzle-orm';
-import type { WorkspaceNodeDto } from '@labcollab/shared';
-import { db } from '../db';
-import { experiments, projectNodes, projectPages } from '../db/schema';
+import type { WorkspaceNodeDto } from '@labcollab/shared'
+import { and, asc, eq, isNull } from 'drizzle-orm'
+import { db } from '../db'
+import { experiments, projectNodes, projectPages } from '../db/schema'
 
 type NodeRow = typeof projectNodes.$inferSelect & {
-  pageId: string | null;
-  experimentStatus: typeof experiments.$inferSelect.status | null;
-};
+  pageId: string | null
+  experimentStatus: typeof experiments.$inferSelect.status | null
+}
 
 export async function loadProjectNodes(projectId: string): Promise<NodeRow[]> {
   const rows = await db
@@ -19,23 +19,23 @@ export async function loadProjectNodes(projectId: string): Promise<NodeRow[]> {
     .leftJoin(projectPages, eq(projectPages.nodeId, projectNodes.id))
     .leftJoin(experiments, eq(experiments.id, projectNodes.experimentId))
     .where(eq(projectNodes.projectId, projectId))
-    .orderBy(asc(projectNodes.sortOrder), asc(projectNodes.createdAt));
+    .orderBy(asc(projectNodes.sortOrder), asc(projectNodes.createdAt))
 
   return rows.map(({ node, pageId, experimentStatus }) => ({
     ...node,
     pageId: pageId ?? null,
     experimentStatus: experimentStatus ?? null,
-  }));
+  }))
 }
 
 export function buildWorkspaceTree(rows: NodeRow[]): WorkspaceNodeDto[] {
-  const byParent = new Map<string | null, NodeRow[]>();
+  const byParent = new Map<string | null, NodeRow[]>()
 
   for (const row of rows) {
-    const key = row.parentId ?? null;
-    const list = byParent.get(key) ?? [];
-    list.push(row);
-    byParent.set(key, list);
+    const key = row.parentId ?? null
+    const list = byParent.get(key) ?? []
+    list.push(row)
+    byParent.set(key, list)
   }
 
   const toDto = (row: NodeRow): WorkspaceNodeDto => ({
@@ -49,14 +49,14 @@ export function buildWorkspaceTree(rows: NodeRow[]): WorkspaceNodeDto[] {
     experimentId: row.experimentId,
     experimentStatus: row.experimentStatus,
     children: (byParent.get(row.id) ?? []).map(toDto),
-  });
+  })
 
-  return (byParent.get(null) ?? []).map(toDto);
+  return (byParent.get(null) ?? []).map(toDto)
 }
 
 export async function getWorkspaceTree(projectId: string): Promise<WorkspaceNodeDto[]> {
-  const rows = await loadProjectNodes(projectId);
-  return buildWorkspaceTree(rows);
+  const rows = await loadProjectNodes(projectId)
+  return buildWorkspaceTree(rows)
 }
 
 export async function getNodeById(nodeId: string) {
@@ -64,24 +64,25 @@ export async function getNodeById(nodeId: string) {
     .select()
     .from(projectNodes)
     .where(eq(projectNodes.id, nodeId))
-    .limit(1);
-  return row ?? null;
+    .limit(1)
+  return row ?? null
 }
 
 export async function assertFolderParent(
   projectId: string,
   parentId: string | null | undefined,
-): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
-  if (!parentId) return { ok: true };
+): Promise<{ ok: true } | { ok: false, status: number, error: string }> {
+  if (!parentId)
+    return { ok: true }
 
-  const parent = await getNodeById(parentId);
+  const parent = await getNodeById(parentId)
   if (!parent || parent.projectId !== projectId) {
-    return { ok: false, status: 404, error: 'Parent not found' };
+    return { ok: false, status: 404, error: 'Parent not found' }
   }
   if (parent.nodeType !== 'folder') {
-    return { ok: false, status: 422, error: 'Parent must be a folder' };
+    return { ok: false, status: 422, error: 'Parent must be a folder' }
   }
-  return { ok: true };
+  return { ok: true }
 }
 
 export async function nextSortOrder(projectId: string, parentId: string | null) {
@@ -93,30 +94,32 @@ export async function nextSortOrder(projectId: string, parentId: string | null) 
         eq(projectNodes.projectId, projectId),
         parentId ? eq(projectNodes.parentId, parentId) : isNull(projectNodes.parentId),
       ),
-    );
+    )
 
-  if (rows.length === 0) return 0;
-  return Math.max(...rows.map((r) => r.sortOrder)) + 1;
+  if (rows.length === 0)
+    return 0
+  return Math.max(...rows.map(r => r.sortOrder)) + 1
 }
 
 export async function syncExperimentNodeTitle(experimentId: string, title: string) {
   await db
     .update(projectNodes)
     .set({ title, updatedAt: new Date() })
-    .where(eq(projectNodes.experimentId, experimentId));
+    .where(eq(projectNodes.experimentId, experimentId))
 }
 
 export async function createExperimentNode(params: {
-  projectId: string;
-  experimentId: string;
-  title: string;
-  authorId: string;
-  parentNodeId?: string | null;
+  projectId: string
+  experimentId: string
+  title: string
+  authorId: string
+  parentNodeId?: string | null
 }) {
-  const parentCheck = await assertFolderParent(params.projectId, params.parentNodeId);
-  if (!parentCheck.ok) throw new Error(parentCheck.error);
+  const parentCheck = await assertFolderParent(params.projectId, params.parentNodeId)
+  if (!parentCheck.ok)
+    throw new Error(parentCheck.error)
 
-  const sortOrder = await nextSortOrder(params.projectId, params.parentNodeId ?? null);
+  const sortOrder = await nextSortOrder(params.projectId, params.parentNodeId ?? null)
 
   const [node] = await db
     .insert(projectNodes)
@@ -129,7 +132,7 @@ export async function createExperimentNode(params: {
       experimentId: params.experimentId,
       authorId: params.authorId,
     })
-    .returning();
+    .returning()
 
-  return node;
+  return node
 }
